@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Business Model Workshop AI Screener</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              tsinghua: {
+                50: '#f3e6ff',
+                100: '#e0c2ff',
+                200: '#c58fff',
+                300: '#a34dff',
+                400: '#8f00ff',
+                500: '#660099',
+                600: '#52007a',
+                700: '#3d005c',
+                800: '#29003d',
+                900: '#14001f',
+              }
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.5s ease-out',
+              'scale-in': 'scaleIn 0.3s ease-out',
+              'slide-up': 'slideUp 0.4s ease-out',
+              'flow-pulse': 'flowPulse 2s ease-in-out infinite',
+              'node-glow': 'nodeGlow 1.5s ease-in-out infinite',
+              'fade-in-left': 'fadeInLeft 0.5s ease-out',
+              'fade-in-right': 'fadeInRight 0.5s ease-out',
+              'dash-flow': 'dashFlow 1s linear infinite',
+              'glow-pulse': 'glowPulse 2s ease-in-out infinite',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' }
+              },
+              scaleIn: {
+                '0%': { opacity: '0', transform: 'scale(0.95)' },
+                '100%': { opacity: '1', transform: 'scale(1)' }
+              },
+              slideUp: {
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' }
+              },
+              flowPulse: {
+                '0%, 100%': { opacity: '0.4', transform: 'scaleX(1)' },
+                '50%': { opacity: '1', transform: 'scaleX(1.05)' }
+              },
+              nodeGlow: {
+                '0%, 100%': { boxShadow: '0 0 5px rgba(245, 158, 11, 0.3)' },
+                '50%': { boxShadow: '0 0 20px rgba(245, 158, 11, 0.6), 0 0 40px rgba(245, 158, 11, 0.2)' }
+              },
+              fadeInLeft: {
+                '0%': { opacity: '0', transform: 'translateX(-20px)' },
+                '100%': { opacity: '1', transform: 'translateX(0)' }
+              },
+              fadeInRight: {
+                '0%': { opacity: '0', transform: 'translateX(20px)' },
+                '100%': { opacity: '1', transform: 'translateX(0)' }
+              },
+              dashFlow: {
+                '0%': { strokeDashoffset: '24' },
+                '100%': { strokeDashoffset: '0' }
+              },
+              glowPulse: {
+                '0%, 100%': { opacity: '0.4' },
+                '50%': { opacity: '1' }
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;900&display=swap');
+      body {
+        font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+        background-color: #f8f9fa;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      /* Global scrollbar styling */
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+      /* Selection color */
+      ::selection { background: rgba(102, 0, 153, 0.15); }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
+    "recharts": "https://esm.sh/recharts@^3.6.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

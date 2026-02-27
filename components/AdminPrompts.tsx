@@ -4,7 +4,7 @@ import { PromptConfig, StagePromptConfig, PipelineStage, Language, DimensionWeig
 import { translations } from '../i18n';
 import DecisionTreeViz from './DecisionTreeViz';
 import { getProviderConfig } from '../services/llmService';
-import { resolveModel } from '../services/geminiService';
+import { resolveModel } from '../services/aiService';
 import { savePromptVersion, getVersionHistory } from '../services/promptVersionService';
 
 interface Props {

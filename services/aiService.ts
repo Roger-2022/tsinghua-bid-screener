@@ -90,13 +90,13 @@ const buildWeightsSnippet = (weights: DimensionWeight[]): string =>
 
 // Hardcoded default model names from DEFAULT_STAGE_PROMPTS — if the stage still has
 // one of these defaults, we should use apiConfig models instead (the user may have
-// switched to a different provider that doesn't support Gemini model names).
-export const DEFAULT_GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-2.5-pro-preview-06-05', 'gemini-2.5-flash-preview-05-20', 'gemini-1.5-pro'];
+// switched to a different provider that doesn't support these model names).
+export const DEFAULT_LEGACY_MODELS = ['gemini-2.0-flash', 'gemini-2.5-pro-preview-06-05', 'gemini-2.5-flash-preview-05-20', 'gemini-1.5-pro'];
 
 export const resolveModel = (stageModel: string | undefined, apiConfigModel: string): string => {
   if (!stageModel) return apiConfigModel;
-  // If the stage still has the default Gemini model name, use apiConfig's model instead
-  if (DEFAULT_GEMINI_MODELS.includes(stageModel)) return apiConfigModel;
+  // If the stage still has a legacy default model name, use apiConfig's model instead
+  if (DEFAULT_LEGACY_MODELS.includes(stageModel)) return apiConfigModel;
   // Admin explicitly set a custom model for this stage — use it
   return stageModel;
 };

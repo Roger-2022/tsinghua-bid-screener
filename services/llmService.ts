@@ -165,13 +165,13 @@ interface ChatCompletionOptions {
 }
 
 // ---------------------------------------------------------------------------
-// Gemini REST API (no SDK needed)
+// Google AI REST API
 // ---------------------------------------------------------------------------
-async function callGemini(config: ApiConfig, opts: ChatCompletionOptions): Promise<string> {
+async function callGoogleAI(config: ApiConfig, opts: ChatCompletionOptions): Promise<string> {
   const baseUrl = config.baseUrl || 'https://generativelanguage.googleapis.com/v1beta';
   const url = `${baseUrl}/models/${opts.model}:generateContent?key=${config.apiKey}`;
 
-  // Convert chat messages to Gemini format
+  // Convert chat messages to Google AI format
   const systemInstruction = opts.messages.find(m => m.role === 'system')?.content;
   const contents = opts.messages
     .filter(m => m.role !== 'system')
@@ -199,12 +199,12 @@ async function callGemini(config: ApiConfig, opts: ChatCompletionOptions): Promi
 
   if (!resp.ok) {
     const errText = await resp.text();
-    throw new Error(`Gemini API error (${resp.status}): ${errText}`);
+    throw new Error(`Google AI API error (${resp.status}): ${errText}`);
   }
 
   const data = await resp.json();
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('Gemini returned empty response');
+  if (!text) throw new Error('Google AI returned empty response');
   return text;
 }
 
@@ -304,7 +304,7 @@ export async function chatCompletion(config: ApiConfig, opts: ChatCompletionOpti
 
   switch (config.provider) {
     case 'gemini':
-      return callGemini(config, opts);
+      return callGoogleAI(config, opts);
     case 'anthropic':
       return callAnthropic(config, opts);
     default:

@@ -14,7 +14,7 @@ import OpenEndedAnalysis from './components/OpenEndedAnalysis';
 import BackupManager from './components/BackupManager';
 import AdminAIAssistant from './components/AdminAIAssistant';
 import { translations } from './i18n';
-import { generateFinalAssessment, DEFAULT_GEMINI_MODELS } from './services/geminiService';
+import { generateFinalAssessment, DEFAULT_LEGACY_MODELS } from './services/aiService';
 import { EXAMPLE_CANDIDATES, isExampleCandidate } from './data/exampleCandidates';
 import { EXAMPLE_QUESTIONS, isExampleQuestion } from './data/exampleQuestions';
 import { DEFAULT_API_CONFIG, getProviderConfig } from './services/llmService';
@@ -681,8 +681,8 @@ const App: React.FC = () => {
             const def = DEFAULT_STAGE_PROMPTS.find(d => d.stage === patched.stage);
             patched = { ...patched, inherited_context: def?.inherited_context || '' };
           }
-          // Migrate: clear default Gemini model names so display follows apiConfig
-          if (patched.model && DEFAULT_GEMINI_MODELS.includes(patched.model)) {
+          // Migrate: clear legacy default model names so display follows apiConfig
+          if (patched.model && DEFAULT_LEGACY_MODELS.includes(patched.model)) {
             patched = { ...patched, model: undefined };
           }
           return patched;

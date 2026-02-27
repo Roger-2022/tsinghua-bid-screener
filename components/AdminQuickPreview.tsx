@@ -5,7 +5,7 @@ import {
   DimensionWeight, NumericDecisionThresholds, PromptConfig, ApiConfig,
 } from '../types';
 import { translations } from '../i18n';
-import { generateFinalAssessment } from '../services/geminiService';
+import { generateFinalAssessment } from '../services/aiService';
 import {
   generateMockCandidateInfo, generateMockObjectiveResponses,
   generateMockOpenEndedResponse, generateMockMessages,

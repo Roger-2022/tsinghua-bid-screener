@@ -385,7 +385,7 @@
       <tr><td>认证</td><td>Supabase Auth</td></tr>
       <tr><td>前端托管</td><td>Vercel</td></tr>
       <tr><td>代码托管</td><td>GitHub</td></tr>
-      <tr><td>AI 面试</td><td>Google Gemini API</td></tr>
+      <tr><td>AI 面试</td><td>多 LLM 支持（Google、OpenAI、Anthropic、DeepSeek 等）</td></tr>
     </table>
 
     <h3>核心文件</h3>
@@ -525,7 +525,7 @@ $$ <span class="sql-kw">LANGUAGE</span> plpgsql;
 
     <h3>3.5 本地开发环境配置</h3>
     <p>在项目根目录创建或编辑 <code>.env.local</code> 文件：</p>
-    <pre><code>GEMINI_API_KEY=你的GeminiAPIKey
+    <pre><code>GEMINI_API_KEY=你的LLM_API_Key
 VITE_SUPABASE_URL=https://xxxxxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=你复制的anon_key</code></pre>
 
@@ -602,7 +602,7 @@ git push -u origin main</code></pre>
       <tr><th>Name（手动输入）</th><th>Value</th></tr>
       <tr><td><code>VITE_SUPABASE_URL</code></td><td>你的 Supabase Project URL</td></tr>
       <tr><td><code>VITE_SUPABASE_ANON_KEY</code></td><td>你的 Supabase anon public key</td></tr>
-      <tr><td><code>GEMINI_API_KEY</code></td><td>你的 Gemini API Key（选填）</td></tr>
+      <tr><td><code>GEMINI_API_KEY</code></td><td>你的 LLM API Key（选填）</td></tr>
     </table>
 
     <div class="callout callout-warn">
@@ -783,7 +783,7 @@ git push
       <tr><td>管理员邮箱</td><td>你创建的管理员邮箱</td></tr>
       <tr><td>管理员密码</td><td>建议对方登录后立即修改</td></tr>
       <tr><td>Supabase 数据库密码</td><td>创建项目时设的密码</td></tr>
-      <tr><td>Gemini API Key</td><td>如果使用了 AI 面试功能</td></tr>
+      <tr><td>LLM API Key</td><td>如果使用了 AI 面试功能</td></tr>
     </table>
   </div>
 
@@ -812,7 +812,7 @@ git push
    密码: ____________________（请立即修改）
 
 5. API Keys
-   Gemini API Key: ____________________
+   LLM API Key: ____________________
 
 6. 接收方验证
    [  ] 能 git clone 并 git push 代码

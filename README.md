@@ -1,20 +1,20 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Tsinghua BID AI Screener
 
-# Run and deploy your AI Studio app
+清华大学 BID 商业模式工坊 AI 招新筛选系统。
 
-This contains everything you need to run your app locally.
+## 功能
 
-View your app in AI Studio: https://ai.studio/apps/drive/1Bw5oSk-GjeSSJ82InWdyYbJSVRm86fPn
+- **候选人端**：在线完成面试问卷（基本信息 + AI 面试）
+- **管理员端**：登录后台查看候选人数据、打分、筛选
 
-## Run Locally
+## 本地运行
 
-**Prerequisites:**  Node.js
+**前提**：Node.js
 
+1. 安装依赖：`npm install`
+2. 在 `.env.local` 中配置环境变量（参考 `.env.local` 文件中的说明）
+3. 启动：`npm run dev`
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 部署
+
+详见 [deployment-guide.md](./deployment-guide.md) 或 [deployment-guide.html](./deployment-guide.html)。

@@ -65,7 +65,7 @@
 | 认证 | Supabase Auth |
 | 前端托管 | Vercel |
 | 代码托管 | GitHub |
-| AI 面试 | Google Gemini API |
+| AI 面试 | 多 LLM 支持（Google、OpenAI、Anthropic、DeepSeek 等） |
 
 ### 核心文件
 
@@ -187,7 +187,7 @@ CREATE POLICY "auth_delete"  ON candidates FOR DELETE USING (auth.role() = 'auth
 在项目根目录创建或编辑 `.env.local` 文件：
 
 ```bash
-GEMINI_API_KEY=你的GeminiAPIKey
+GEMINI_API_KEY=你的LLM_API_Key
 VITE_SUPABASE_URL=https://xxxxxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=你复制的anon_key
 ```
@@ -276,7 +276,7 @@ branch 'main' set up to track 'origin/main'.
 |------|-------|
 | `VITE_SUPABASE_URL` | 你的 Supabase Project URL |
 | `VITE_SUPABASE_ANON_KEY` | 你的 Supabase anon public key |
-| `GEMINI_API_KEY` | 你的 Gemini API Key（选填） |
+| `GEMINI_API_KEY` | 你的 LLM API Key（选填） |
 
 > **重要提示**：Name 字段建议**手动输入**而非复制粘贴，避免带入隐藏空格导致报错 "The name contains invalid characters"。
 
@@ -460,7 +460,7 @@ git push
 | 管理员邮箱 | 你创建的管理员邮箱 |
 | 管理员密码 | 你设置的管理员密码（建议对方登录后立即修改） |
 | Supabase 数据库密码 | 创建项目时设的密码 |
-| Gemini API Key | 如果使用了 AI 面试功能 |
+| LLM API Key | 如果使用了 AI 面试功能 |
 
 ---
 
@@ -491,7 +491,7 @@ git push
    密码: ____________________（私信发送，请立即修改）
 
 5. API Keys
-   Gemini API Key: ____________________（已配置在 Vercel 环境变量中）
+   LLM API Key: ____________________（已配置在 Vercel 环境变量中）
 
 6. 接收方验证
    [  ] 能 git clone 并 git push 代码到仓库

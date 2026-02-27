@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { QuestionTemplate, Language, DimensionWeight, QuestionOption, PromptConfig, NumericDecisionThresholds, ApiConfig, ProbingStrategyConfig, DEFAULT_PROBING_STRATEGY, QuestionPromptSections, DEFAULT_QUALITY_CHECKS, QualityCheckItem } from '../types';
-import { generateBatchQuestions } from '../services/geminiService';
+import { generateBatchQuestions } from '../services/aiService';
 import { translations } from '../i18n';
 import { getExamplesByDimension, isExampleQuestion } from '../data/exampleQuestions';
 import { DEFAULT_PROMPT_SECTIONS } from '../types';

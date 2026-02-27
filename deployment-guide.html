@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BID AI Screener — 部署与项目转移指南</title>
+  <style>
+    :root {
+      --primary: #6d28d9;
+      --primary-light: #ede9fe;
+      --primary-dark: #4c1d95;
+      --accent: #f59e0b;
+      --accent-light: #fef3c7;
+      --success: #10b981;
+      --success-light: #d1fae5;
+      --danger: #ef4444;
+      --danger-light: #fee2e2;
+      --info: #3b82f6;
+      --info-light: #dbeafe;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-500: #6b7280;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.7;
+      color: var(--gray-800);
+      background: var(--gray-50);
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 48px 24px;
+      text-align: center;
+    }
+    .header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
+    .header p { font-size: 1.05rem; opacity: 0.9; max-width: 600px; margin: 0 auto; }
+
+    /* Resource bar */
+    .resource-bar {
+      background: white;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 16px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+    }
+    .resource-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: var(--gray-700);
+    }
+    .resource-item a {
+      color: var(--primary);
+      text-decoration: none;
+      word-break: break-all;
+    }
+    .resource-item a:hover { text-decoration: underline; }
+
+    /* Main content */
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    /* TOC */
+    .toc {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin: 32px 0;
+    }
+    .toc h2 { font-size: 1.1rem; color: var(--gray-700); margin-bottom: 16px; }
+    .toc ol { padding-left: 20px; }
+    .toc li { margin-bottom: 6px; }
+    .toc a { color: var(--primary); text-decoration: none; font-size: 0.95rem; }
+    .toc a:hover { text-decoration: underline; }
+
+    /* Sections */
+    .section {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      padding: 32px;
+      margin-top: 24px;
+    }
+
+    h2 {
+      font-size: 1.4rem;
+      color: var(--gray-900);
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--primary-light);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h2 .num {
+      background: var(--primary);
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      color: var(--gray-800);
+      margin: 24px 0 12px;
+    }
+
+    h4 {
+      font-size: 1rem;
+      color: var(--gray-700);
+      margin: 16px 0 8px;
+    }
+
+    p { margin-bottom: 12px; color: var(--gray-700); }
+
+    /* Ordered list with step styling */
+    ol {
+      padding-left: 24px;
+      margin-bottom: 16px;
+    }
+    ol li {
+      margin-bottom: 8px;
+      color: var(--gray-700);
+    }
+    ul {
+      padding-left: 24px;
+      margin-bottom: 16px;
+    }
+    ul li {
+      margin-bottom: 6px;
+      color: var(--gray-700);
+    }
+
+    strong { color: var(--gray-900); }
+
+    /* Code blocks */
+    pre {
+      background: var(--gray-900);
+      color: #e5e7eb;
+      border-radius: 8px;
+      padding: 16px 20px;
+      overflow-x: auto;
+      margin: 12px 0 16px;
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+    code {
+      font-family: "SF Mono", "Fira Code", "JetBrains Mono", Menlo, monospace;
+      font-size: 0.88em;
+    }
+    p code, li code, td code {
+      background: var(--gray-100);
+      color: var(--danger);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+
+    /* SQL keyword highlighting in pre */
+    .sql-kw { color: #93c5fd; font-weight: 600; }
+    .sql-comment { color: #6b7280; font-style: italic; }
+    .sql-string { color: #86efac; }
+    .sql-func { color: #fbbf24; }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 16px;
+      font-size: 0.92rem;
+    }
+    th {
+      background: var(--gray-100);
+      color: var(--gray-700);
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--gray-200);
+    }
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--gray-100);
+      color: var(--gray-700);
+    }
+    tr:hover td { background: var(--gray-50); }
+
+    /* Callout boxes */
+    .callout {
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 14px 0;
+      font-size: 0.92rem;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .callout-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+    .callout-info { background: var(--info-light); border-left: 4px solid var(--info); }
+    .callout-warn { background: var(--accent-light); border-left: 4px solid var(--accent); }
+    .callout-success { background: var(--success-light); border-left: 4px solid var(--success); }
+    .callout-danger { background: var(--danger-light); border-left: 4px solid var(--danger); }
+
+    /* Architecture diagram */
+    .arch-diagram {
+      background: var(--gray-900);
+      color: #e5e7eb;
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin: 16px 0;
+      font-family: "SF Mono", Menlo, monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      white-space: pre;
+      overflow-x: auto;
+      text-align: center;
+    }
+
+    /* Transfer checklist */
+    .checklist {
+      background: var(--gray-50);
+      border: 2px dashed var(--gray-300);
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin: 16px 0;
+      font-family: "SF Mono", Menlo, monospace;
+      font-size: 0.85rem;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .checklist-title {
+      text-align: center;
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 8px;
+      color: var(--gray-900);
+    }
+
+    /* FAQ */
+    .faq-item {
+      border-bottom: 1px solid var(--gray-100);
+      padding: 16px 0;
+    }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-q {
+      font-weight: 600;
+      color: var(--gray-900);
+      margin-bottom: 8px;
+      display: flex;
+      gap: 8px;
+      align-items: baseline;
+    }
+    .faq-q span { color: var(--primary); font-size: 0.9rem; }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--gray-500);
+      font-size: 0.85rem;
+    }
+
+    /* Print */
+    @media print {
+      .header { padding: 24px; }
+      .section { break-inside: avoid; border: 1px solid #ccc; }
+      body { background: white; }
+    }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      .header { padding: 32px 16px; }
+      .header h1 { font-size: 1.5rem; }
+      .section { padding: 20px 16px; }
+      .resource-bar { flex-direction: column; align-items: center; }
+      pre { font-size: 0.8rem; padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>BID AI Screener</h1>
+  <p>部署与项目转移完整指南</p>
+</div>
+
+<!-- Resource bar -->
+<div class="resource-bar">
+  <div class="resource-item">🌐 <a href="https://tsinghua-bid-screener.vercel.app" target="_blank">tsinghua-bid-screener.vercel.app</a></div>
+  <div class="resource-item">📦 <a href="https://github.com/Roger-2022/tsinghua-bid-screener" target="_blank">GitHub 仓库</a></div>
+  <div class="resource-item">🗄️ <a href="https://supabase.com/dashboard/project/vspohrqwtedhkstupgdm" target="_blank">Supabase 项目</a></div>
+</div>
+
+<div class="container">
+
+  <!-- TOC -->
+  <div class="toc">
+    <h2>📑 目录</h2>
+    <ol>
+      <li><a href="#s1">项目概览</a></li>
+      <li><a href="#s2">技术架构</a></li>
+      <li><a href="#s3">Supabase 设置（数据库 + 认证）</a></li>
+      <li><a href="#s4">GitHub 仓库设置</a></li>
+      <li><a href="#s5">Vercel 部署（网站上线）</a></li>
+      <li><a href="#s6">上线后验证</a></li>
+      <li><a href="#s7">日常维护</a></li>
+      <li><a href="#s8">项目所有权转移</a></li>
+      <li><a href="#s9">交接清单模板</a></li>
+      <li><a href="#s10">常见问题</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 项目概览 -->
+  <div class="section" id="s1">
+    <h2><span class="num">1</span> 项目概览</h2>
+    <p><strong>BID AI Screener</strong> 是清华大学 BID 的 AI 招新筛选系统：</p>
+    <ul>
+      <li><strong>候选人</strong>：在手机或电脑上完成面试问卷（基本信息 + AI 面试）</li>
+      <li><strong>管理员</strong>：登录后台查看所有候选人数据、打分、筛选</li>
+    </ul>
+
+    <h3>当前项目资源</h3>
+    <table>
+      <tr><th>资源</th><th>地址</th></tr>
+      <tr><td>网站（公网）</td><td><a href="https://tsinghua-bid-screener.vercel.app" target="_blank">https://tsinghua-bid-screener.vercel.app</a></td></tr>
+      <tr><td>GitHub 仓库</td><td><a href="https://github.com/Roger-2022/tsinghua-bid-screener" target="_blank">https://github.com/Roger-2022/tsinghua-bid-screener</a></td></tr>
+      <tr><td>Supabase 项目</td><td><a href="https://supabase.com/dashboard/project/vspohrqwtedhkstupgdm" target="_blank">https://supabase.com/dashboard/project/vspohrqwtedhkstupgdm</a></td></tr>
+      <tr><td>Supabase URL</td><td><code>https://vspohrqwtedhkstupgdm.supabase.co</code></td></tr>
+    </table>
+  </div>
+
+  <!-- 2. 技术架构 -->
+  <div class="section" id="s2">
+    <h2><span class="num">2</span> 技术架构</h2>
+
+    <div class="arch-diagram">
+          用户（手机 / 电脑）
+                │
+                ▼
+    ┌──────────────────────┐
+    │   Vercel（前端托管）    │
+    │   自动部署 + CDN      │
+    └──────────┬───────────┘
+               │
+       ┌───────┴───────┐
+       ▼               ▼
+ ┌───────────┐  ┌────────────┐
+ │ Supabase  │  │ Supabase   │
+ │ PostgreSQL│  │ Auth       │
+ │ (数据存储) │  │ (管理员认证)│
+ └───────────┘  └────────────┘</div>
+
+    <h3>技术栈</h3>
+    <table>
+      <tr><th>层级</th><th>技术</th></tr>
+      <tr><td>前端框架</td><td>React 19 + TypeScript</td></tr>
+      <tr><td>构建工具</td><td>Vite 6</td></tr>
+      <tr><td>UI</td><td>Tailwind CSS</td></tr>
+      <tr><td>数据库</td><td>Supabase (PostgreSQL)</td></tr>
+      <tr><td>认证</td><td>Supabase Auth</td></tr>
+      <tr><td>前端托管</td><td>Vercel</td></tr>
+      <tr><td>代码托管</td><td>GitHub</td></tr>
+      <tr><td>AI 面试</td><td>Google Gemini API</td></tr>
+    </table>
+
+    <h3>核心文件</h3>
+    <table>
+      <tr><th>文件</th><th>作用</th></tr>
+      <tr><td><code>src/services/supabaseClient.ts</code></td><td>Supabase 连接客户端</td></tr>
+      <tr><td><code>src/services/candidateService.ts</code></td><td>候选人数据增删改查（双写：localStorage + Supabase）</td></tr>
+      <tr><td><code>src/services/authService.ts</code></td><td>管理员认证（Supabase Auth + 本地降级）</td></tr>
+      <tr><td><code>src/components/AdminLogin.tsx</code></td><td>管理员登录页面</td></tr>
+      <tr><td><code>src/App.tsx</code></td><td>主应用逻辑</td></tr>
+      <tr><td><code>.env.local</code></td><td>环境变量（不上传 GitHub）</td></tr>
+    </table>
+
+    <h3>数据流</h3>
+    <ol>
+      <li><strong>候选人提交</strong>：数据先写入 localStorage（确保不丢失），再异步写入 Supabase</li>
+      <li><strong>管理员查看</strong>：优先从 Supabase 拉取，不可用时降级到 localStorage</li>
+      <li><strong>认证</strong>：管理员通过 Supabase Auth 登录，不可用时降级到硬编码密码</li>
+    </ol>
+  </div>
+
+  <!-- 3. Supabase 设置 -->
+  <div class="section" id="s3">
+    <h2><span class="num">3</span> Supabase 设置（数据库 + 认证）</h2>
+
+    <h3>3.1 创建 Supabase 项目</h3>
+    <ol>
+      <li>打开 <a href="https://supabase.com" target="_blank">supabase.com</a> 并注册/登录（可用 GitHub 账号登录）</li>
+      <li>点击 <strong>"New Project"</strong></li>
+      <li>填写：
+        <ul>
+          <li><strong>Name</strong>：<code>tsinghua-bid-screener</code></li>
+          <li><strong>Database Password</strong>：设一个强密码并<strong>记下来</strong></li>
+          <li><strong>Region</strong>：选 <strong>Singapore (Southeast Asia)</strong>（国内最快）</li>
+        </ul>
+      </li>
+      <li>点 <strong>"Create new project"</strong>，等待 1-2 分钟</li>
+    </ol>
+
+    <h3>3.2 建表（SQL Editor）</h3>
+    <ol>
+      <li>左侧菜单点 <strong>"SQL Editor"</strong></li>
+      <li>点 <strong>"New query"</strong></li>
+      <li>将以下 SQL <strong>全部</strong>复制粘贴进去：</li>
+    </ol>
+
+    <pre><code><span class="sql-comment">-- ============================================</span>
+<span class="sql-comment">-- BID AI Screener 数据库初始化</span>
+<span class="sql-comment">-- ============================================</span>
+
+<span class="sql-comment">-- 1. 建表：candidates（候选人信息表）</span>
+<span class="sql-kw">CREATE TABLE</span> candidates (
+  id              TEXT <span class="sql-kw">PRIMARY KEY</span>,
+  display_name    TEXT <span class="sql-kw">NOT NULL</span>,
+  status          TEXT <span class="sql-kw">NOT NULL</span>
+    <span class="sql-kw">CHECK</span> (status <span class="sql-kw">IN</span> (<span class="sql-string">'pass'</span>, <span class="sql-string">'hold'</span>, <span class="sql-string">'reject'</span>)),
+  status_badge    TEXT,
+  name            TEXT <span class="sql-kw">NOT NULL</span>,
+  email           TEXT,
+  phone           TEXT,
+  wechat_id       TEXT,
+  identity        TEXT,
+  school_org      TEXT,
+  score_overall   REAL,
+  data            JSONB <span class="sql-kw">NOT NULL</span>,
+  created_at      TIMESTAMPTZ <span class="sql-kw">DEFAULT</span> <span class="sql-func">now</span>(),
+  updated_at      TIMESTAMPTZ <span class="sql-kw">DEFAULT</span> <span class="sql-func">now</span>()
+);
+
+<span class="sql-comment">-- 2. 索引（加速查询）</span>
+<span class="sql-kw">CREATE INDEX</span> idx_candidates_status <span class="sql-kw">ON</span> candidates(status);
+<span class="sql-kw">CREATE INDEX</span> idx_candidates_created_at <span class="sql-kw">ON</span> candidates(created_at <span class="sql-kw">DESC</span>);
+
+<span class="sql-comment">-- 3. 自动更新 updated_at 的触发器</span>
+<span class="sql-kw">CREATE OR REPLACE FUNCTION</span> <span class="sql-func">update_updated_at</span>()
+<span class="sql-kw">RETURNS TRIGGER AS</span> $$
+<span class="sql-kw">BEGIN</span>
+  NEW.updated_at = <span class="sql-func">now</span>();
+  <span class="sql-kw">RETURN</span> NEW;
+<span class="sql-kw">END</span>;
+$$ <span class="sql-kw">LANGUAGE</span> plpgsql;
+
+<span class="sql-kw">CREATE TRIGGER</span> candidates_updated_at
+  <span class="sql-kw">BEFORE UPDATE ON</span> candidates
+  <span class="sql-kw">FOR EACH ROW EXECUTE FUNCTION</span> <span class="sql-func">update_updated_at</span>();
+
+<span class="sql-comment">-- 4. 开启行级安全策略</span>
+<span class="sql-kw">ALTER TABLE</span> candidates <span class="sql-kw">ENABLE ROW LEVEL SECURITY</span>;
+
+<span class="sql-comment">-- 5. 安全策略</span>
+<span class="sql-kw">CREATE POLICY</span> <span class="sql-string">"anon_insert"</span>  <span class="sql-kw">ON</span> candidates <span class="sql-kw">FOR INSERT WITH CHECK</span> (<span class="sql-kw">true</span>);
+<span class="sql-kw">CREATE POLICY</span> <span class="sql-string">"auth_select"</span> <span class="sql-kw">ON</span> candidates <span class="sql-kw">FOR SELECT USING</span> (auth.role() = <span class="sql-string">'authenticated'</span>);
+<span class="sql-kw">CREATE POLICY</span> <span class="sql-string">"auth_update"</span> <span class="sql-kw">ON</span> candidates <span class="sql-kw">FOR UPDATE USING</span> (auth.role() = <span class="sql-string">'authenticated'</span>);
+<span class="sql-kw">CREATE POLICY</span> <span class="sql-string">"auth_delete"</span> <span class="sql-kw">ON</span> candidates <span class="sql-kw">FOR DELETE USING</span> (auth.role() = <span class="sql-string">'authenticated'</span>);</code></pre>
+
+    <ol start="4">
+      <li>点 <strong>"Run"</strong>（或 Ctrl+Enter / Cmd+Enter）</li>
+      <li>看到绿色 <strong>"Success. No rows returned"</strong> 即为成功</li>
+    </ol>
+
+    <h3>3.3 创建管理员账户</h3>
+    <ol>
+      <li>左侧菜单点 <strong>"Authentication"</strong>（锁形图标）</li>
+      <li>点上方 <strong>"Users"</strong> 标签</li>
+      <li>点 <strong>"Add user"</strong> → <strong>"Create new user"</strong></li>
+      <li>填写：
+        <ul>
+          <li><strong>Email</strong>：你的管理邮箱（如 <code>admin@mails.tsinghua.edu.cn</code>）</li>
+          <li><strong>Password</strong>：管理密码</li>
+          <li>勾选 <strong>"Auto Confirm User"</strong></li>
+        </ul>
+      </li>
+      <li>点 <strong>"Create user"</strong></li>
+    </ol>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <div>如果保留了 Confirm email 开关，创建管理员时<strong>必须</strong>勾选 Auto Confirm，否则无法登录。</div>
+    </div>
+
+    <h3>3.4 获取 API Key</h3>
+    <ol>
+      <li>左侧菜单最下方点 <strong>"Project Settings"</strong>（齿轮图标）</li>
+      <li>点左侧 <strong>"API"</strong></li>
+      <li>记下两个值：
+        <ul>
+          <li><strong>Project URL</strong>：如 <code>https://xxxxxxxx.supabase.co</code></li>
+          <li><strong>anon public key</strong>：一串长字符串</li>
+        </ul>
+      </li>
+    </ol>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <div>这两个值后面在 Vercel 部署时需要作为环境变量填入。</div>
+    </div>
+
+    <h3>3.5 本地开发环境配置</h3>
+    <p>在项目根目录创建或编辑 <code>.env.local</code> 文件：</p>
+    <pre><code>GEMINI_API_KEY=你的GeminiAPIKey
+VITE_SUPABASE_URL=https://xxxxxxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=你复制的anon_key</code></pre>
+
+    <div class="callout callout-success">
+      <span class="callout-icon">🔒</span>
+      <div><code>.env.local</code> 已被 <code>.gitignore</code> 排除，<strong>不会</strong>上传到 GitHub，密钥安全。</div>
+    </div>
+
+    <p>本地测试：</p>
+    <pre><code>npm install
+npm run dev</code></pre>
+    <p>打开浏览器 → 点"管理员入口" → 用管理员邮箱和密码登录。</p>
+  </div>
+
+  <!-- 4. GitHub 仓库设置 -->
+  <div class="section" id="s4">
+    <h2><span class="num">4</span> GitHub 仓库设置</h2>
+
+    <h3>4.1 初始化 Git</h3>
+    <pre><code>cd ~/Downloads/copy-of-copy-of-tsinghua-sem-ai-screener
+git init
+git add .
+git commit -m "Initial commit: BID AI Screener"</code></pre>
+
+    <h3>4.2 创建 GitHub 仓库</h3>
+    <ol>
+      <li>打开 <a href="https://github.com/new" target="_blank">github.com/new</a></li>
+      <li><strong>Repository name</strong>：<code>tsinghua-bid-screener</code></li>
+      <li><strong>Visibility</strong>：Public 或 Private 均可（<code>.env.local</code> 不会上传）</li>
+      <li><strong>不要</strong>勾选 "Add README"、"Add .gitignore"</li>
+      <li>点 <strong>"Create repository"</strong></li>
+    </ol>
+
+    <h3>4.3 生成 Personal Access Token</h3>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <div>GitHub <strong>不再支持密码认证</strong>，必须用 Token。</div>
+    </div>
+    <ol>
+      <li>打开 <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens/new</a></li>
+      <li><strong>Note</strong>：随便写，如 <code>push</code></li>
+      <li><strong>Expiration</strong>：选 <code>90 days</code> 或 <code>No expiration</code></li>
+      <li><strong>勾选</strong> <code>repo</code>（第一个大勾）</li>
+      <li>点 <strong>"Generate token"</strong></li>
+      <li><strong>立即复制</strong>生成的 Token（以 <code>ghp_</code> 开头），只显示一次！</li>
+    </ol>
+
+    <h3>4.4 推送代码</h3>
+    <pre><code>git remote add origin https://github.com/你的用户名/tsinghua-bid-screener.git
+git branch -M main
+git push -u origin main</code></pre>
+    <ul>
+      <li><strong>Username</strong>：你的 GitHub 用户名</li>
+      <li><strong>Password</strong>：<strong>粘贴 Token</strong>（不是 GitHub 密码）</li>
+      <li>粘贴时终端不显示任何字符，这是正常的，直接回车</li>
+    </ul>
+  </div>
+
+  <!-- 5. Vercel 部署 -->
+  <div class="section" id="s5">
+    <h2><span class="num">5</span> Vercel 部署（网站上线）</h2>
+
+    <h3>5.1 导入项目</h3>
+    <ol>
+      <li>打开 <a href="https://vercel.com" target="_blank">vercel.com</a>，用 <strong>GitHub 账号</strong>登录</li>
+      <li>点 <strong>"Add New..."</strong> → <strong>"Project"</strong></li>
+      <li>找到 <code>tsinghua-bid-screener</code>，点 <strong>"Import"</strong></li>
+      <li>Vercel 自动检测到 Vite，无需修改设置</li>
+    </ol>
+
+    <h3>5.2 设置环境变量</h3>
+    <p>展开 <strong>"Environment Variables"</strong>，逐个添加：</p>
+    <table>
+      <tr><th>Name（手动输入）</th><th>Value</th></tr>
+      <tr><td><code>VITE_SUPABASE_URL</code></td><td>你的 Supabase Project URL</td></tr>
+      <tr><td><code>VITE_SUPABASE_ANON_KEY</code></td><td>你的 Supabase anon public key</td></tr>
+      <tr><td><code>GEMINI_API_KEY</code></td><td>你的 Gemini API Key（选填）</td></tr>
+    </table>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <div>Name 字段建议<strong>手动输入</strong>，复制粘贴可能带入隐藏空格导致报错。</div>
+    </div>
+
+    <h3>5.3 部署</h3>
+    <ol>
+      <li>点 <strong>"Deploy"</strong></li>
+      <li>等待约 30 秒 ~ 1 分钟</li>
+      <li>获得公网地址：<code>tsinghua-bid-screener.vercel.app</code></li>
+    </ol>
+
+    <h3>5.4 自动部署机制（CI/CD）</h3>
+    <div class="callout callout-success">
+      <span class="callout-icon">🔄</span>
+      <div>
+        <strong>修改代码 → git push → Vercel 自动重新构建 → 30 秒内网站更新</strong><br>
+        无需任何额外配置，这是 Vercel 的核心功能。
+      </div>
+    </div>
+
+    <h3>5.5 绑定自定义域名（可选）</h3>
+    <ol>
+      <li>Vercel 项目 → <strong>Settings</strong> → <strong>Domains</strong></li>
+      <li>输入域名（如 <code>screener.bid.tsinghua.edu.cn</code>）</li>
+      <li>在域名 DNS 添加 CNAME：<code>cname.vercel-dns.com</code></li>
+      <li>等待 DNS 生效</li>
+    </ol>
+  </div>
+
+  <!-- 6. 上线后验证 -->
+  <div class="section" id="s6">
+    <h2><span class="num">6</span> 上线后验证</h2>
+
+    <h3>6.1 候选人端</h3>
+    <ol>
+      <li>手机或电脑打开 <a href="https://tsinghua-bid-screener.vercel.app" target="_blank">tsinghua-bid-screener.vercel.app</a></li>
+      <li>随意填写测试数据</li>
+      <li>提交后数据自动保存到 Supabase</li>
+    </ol>
+
+    <h3>6.2 管理员端</h3>
+    <ol>
+      <li>打开网站 → 点 <strong>"管理员入口"</strong></li>
+      <li>用管理员邮箱和密码登录</li>
+      <li>检查人才库是否有测试数据</li>
+    </ol>
+
+    <h3>6.3 数据库验证</h3>
+    <ol>
+      <li>打开 Supabase Dashboard → <strong>Table Editor</strong> → <code>candidates</code> 表</li>
+      <li>确认测试数据出现</li>
+    </ol>
+  </div>
+
+  <!-- 7. 日常维护 -->
+  <div class="section" id="s7">
+    <h2><span class="num">7</span> 日常维护</h2>
+
+    <h3>7.1 修改代码</h3>
+    <pre><code># 1. 本地修改代码
+# 2. 提交并推送
+git add .
+git commit -m "描述你的修改"
+git push
+
+# 3. Vercel 自动部署，30 秒更新</code></pre>
+
+    <h3>7.2 查看候选人数据</h3>
+    <p><strong>方式一</strong>：网站管理后台 → 管理员入口 → 登录 → 人才库</p>
+    <p><strong>方式二</strong>：<a href="https://supabase.com/dashboard/project/vspohrqwtedhkstupgdm" target="_blank">Supabase Dashboard</a> → Table Editor → candidates</p>
+
+    <h3>7.3 导出数据</h3>
+    <ul>
+      <li>管理后台人才库页面有导出功能</li>
+      <li>Supabase Dashboard → Table Editor → candidates → 右上角 <strong>"Export"</strong> 导出 CSV</li>
+    </ul>
+
+    <h3>7.4 添加/修改管理员</h3>
+    <ol>
+      <li>Supabase Dashboard → <strong>Authentication</strong> → <strong>Users</strong></li>
+      <li>点 <strong>"Add user"</strong> 创建 / 点已有用户重置密码</li>
+    </ol>
+
+    <h3>7.5 更新环境变量</h3>
+    <ol>
+      <li>Vercel Dashboard → 项目 → <strong>Settings</strong> → <strong>Environment Variables</strong></li>
+      <li>修改后需要 <strong>重新部署</strong>：Deployments → 最新 → Redeploy</li>
+    </ol>
+
+    <h3>7.6 排查问题</h3>
+    <p>Vercel Dashboard → <strong>Deployments</strong> → 点击最新部署 → 查看 <strong>Build Logs</strong></p>
+  </div>
+
+  <!-- 8. 项目所有权转移 -->
+  <div class="section" id="s8">
+    <h2><span class="num">8</span> 项目所有权转移</h2>
+    <p>当需要把项目交给其他人（如新一届负责人）时，需要转移 3 个平台：</p>
+
+    <table>
+      <tr><th>#</th><th>平台</th><th>转移方式</th><th>预计时间</th></tr>
+      <tr><td>1</td><td>GitHub 仓库</td><td>转让所有权 或 加 Collaborator</td><td>2 分钟</td></tr>
+      <tr><td>2</td><td>Vercel 项目</td><td>Transfer Project</td><td>2 分钟</td></tr>
+      <tr><td>3</td><td>Supabase 项目</td><td>邀请为 Organization Owner</td><td>2 分钟</td></tr>
+    </table>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">⏱️</span>
+      <div>全部操作约 <strong>10 分钟</strong>可以完成。</div>
+    </div>
+
+    <!-- 8.1 GitHub -->
+    <h3>8.1 GitHub 仓库转移</h3>
+
+    <h4>方法 A — 转让所有权（推荐）</h4>
+    <ol>
+      <li>打开 <a href="https://github.com/Roger-2022/tsinghua-bid-screener/settings" target="_blank">仓库 Settings</a></li>
+      <li>拉到最下面 <strong>"Danger Zone"</strong></li>
+      <li>点 <strong>"Transfer ownership"</strong></li>
+      <li>输入接收人的 GitHub 用户名</li>
+      <li>确认仓库名称</li>
+      <li>对方收到邮件确认后，仓库转到对方名下</li>
+      <li>原有链接会自动重定向</li>
+    </ol>
+
+    <h4>方法 B — 加 Collaborator（保留所有权）</h4>
+    <ol>
+      <li>打开 <a href="https://github.com/Roger-2022/tsinghua-bid-screener/settings/access" target="_blank">仓库 Access 设置</a></li>
+      <li>点 <strong>"Add people"</strong></li>
+      <li>输入对方 GitHub 用户名</li>
+      <li>权限选 <strong>Admin</strong></li>
+    </ol>
+
+    <!-- 8.2 Vercel -->
+    <h3>8.2 Vercel 项目转移</h3>
+    <ol>
+      <li>Vercel Dashboard → <code>tsinghua-bid-screener</code> 项目</li>
+      <li><strong>Settings</strong> → <strong>General</strong> → 拉到底部</li>
+      <li>点 <strong>"Transfer Project"</strong></li>
+      <li>输入对方的 Vercel Team / 用户名</li>
+      <li>对方确认接收</li>
+    </ol>
+
+    <div class="callout callout-success">
+      <span class="callout-icon">✅</span>
+      <div>环境变量（Supabase URL、Key）会一起转移，无需重新配置。</div>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <div>如果同时转让了 GitHub 仓库，需要在 Vercel Settings → Git → Connected Git Repository 中更新关联。</div>
+    </div>
+
+    <!-- 8.3 Supabase -->
+    <h3>8.3 Supabase 项目转移</h3>
+
+    <h4>方法 A — 直接邀请为 Owner（推荐）</h4>
+    <ol>
+      <li>Supabase Dashboard → 左上角 Organization → <strong>Settings</strong></li>
+      <li><strong>"Members"</strong> → 邀请对方邮箱为 <strong>Owner</strong></li>
+      <li>对方接受后，你可以降为 Member 或离开</li>
+    </ol>
+
+    <h4>方法 B — 对方重建</h4>
+    <ol>
+      <li>导出数据：Supabase → Settings → Database → Connection string / Table Editor → Export CSV</li>
+      <li>对方创建新项目，运行建表 SQL，导入数据</li>
+      <li>更新 Vercel 环境变量 <code>VITE_SUPABASE_URL</code> 和 <code>VITE_SUPABASE_ANON_KEY</code></li>
+      <li>重新部署 Vercel</li>
+    </ol>
+
+    <!-- 8.4 转移后告知 -->
+    <h3>8.4 需要告知对方的信息</h3>
+    <table>
+      <tr><th>信息</th><th>内容</th></tr>
+      <tr><td>管理员邮箱</td><td>你创建的管理员邮箱</td></tr>
+      <tr><td>管理员密码</td><td>建议对方登录后立即修改</td></tr>
+      <tr><td>Supabase 数据库密码</td><td>创建项目时设的密码</td></tr>
+      <tr><td>Gemini API Key</td><td>如果使用了 AI 面试功能</td></tr>
+    </table>
+  </div>
+
+  <!-- 9. 交接清单 -->
+  <div class="section" id="s9">
+    <h2><span class="num">9</span> 交接清单模板</h2>
+    <p>转移时填写以下清单发给接收方：</p>
+
+    <div class="checklist">
+<div class="checklist-title">BID AI Screener 项目交接清单</div>
+1. GitHub 仓库
+   地址: https://github.com/Roger-2022/tsinghua-bid-screener
+   操作: [  ] 已转让所有权 / [  ] 已加为 Admin
+
+2. Vercel 项目
+   网站: https://tsinghua-bid-screener.vercel.app
+   操作: [  ] 已转让到接收方 Team
+
+3. Supabase 项目
+   Dashboard: https://supabase.com/dashboard/project/vspohrqwtedhkstupgdm
+   操作: [  ] 已邀请为 Organization Owner
+   数据库密码: ____________________
+
+4. 管理员账号
+   邮箱: ____________________
+   密码: ____________________（请立即修改）
+
+5. API Keys
+   Gemini API Key: ____________________
+
+6. 接收方验证
+   [  ] 能 git clone 并 git push 代码
+   [  ] push 后网站能自动更新
+   [  ] 能用管理员账号登录查看数据
+   [  ] 能在 Supabase Dashboard 看到 candidates 表
+
+7. 日常维护速查
+   修改代码:     git push → 30 秒自动更新
+   查看数据:     网站管理后台 或 Supabase Table Editor
+   导出数据:     管理后台导出 或 Supabase Export CSV
+   添加管理员:   Supabase → Authentication → Users
+   更新环境变量: Vercel → Settings → Environment Variables</div>
+  </div>
+
+  <!-- 10. 常见问题 -->
+  <div class="section" id="s10">
+    <h2><span class="num">10</span> 常见问题</h2>
+
+    <div class="faq-item">
+      <div class="faq-q"><span>Q:</span> 网站打不开 / 加载很慢怎么办？</div>
+      <ul>
+        <li>Vercel 在国内可能偶尔较慢，可考虑绑定自定义域名 + CDN</li>
+        <li>检查 Vercel Dashboard → Deployments 最新部署是否成功</li>
+      </ul>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q"><span>Q:</span> 管理员登录失败怎么办？</div>
+      <ol>
+        <li>确认邮箱和密码正确</li>
+        <li>检查 Supabase → Authentication → Users 中该用户是否为 "Confirmed"</li>
+        <li>忘记密码可在 Supabase Users 页面重置</li>
+      </ol>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q"><span>Q:</span> 候选人提交的数据没出现在管理后台？</div>
+      <ol>
+        <li>检查 Supabase Dashboard → Table Editor → candidates 是否有数据</li>
+        <li>如果没有数据，可能是网络问题，数据只存在了 localStorage</li>
+        <li>检查 Vercel 环境变量是否正确</li>
+      </ol>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q"><span>Q:</span> 怎么修改网站内容？</div>
+      <ol>
+        <li>本地用编辑器修改</li>
+        <li><code>npm run dev</code> 本地预览</li>
+        <li><code>git add . && git commit -m "修改了xxx" && git push</code></li>
+        <li>等 30 秒，网站自动更新</li>
+      </ol>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q"><span>Q:</span> 怎么完全重置系统？</div>
+      <ol>
+        <li>清空数据：Supabase → SQL Editor → <code>DELETE FROM candidates;</code></li>
+        <li>重置管理员：Authentication → Users → 删除旧用户 → 创建新用户</li>
+      </ol>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q"><span>Q:</span> 环境变量在哪里配置？</div>
+      <table>
+        <tr><th>环境</th><th>位置</th></tr>
+        <tr><td>本地开发</td><td>项目根目录 <code>.env.local</code></td></tr>
+        <tr><td>线上网站</td><td>Vercel → Settings → Environment Variables</td></tr>
+      </table>
+      <div class="callout callout-info" style="margin-top: 8px;">
+        <span class="callout-icon">💡</span>
+        <div>修改线上环境变量后需在 Vercel 重新部署才会生效。</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <p>本文档最后更新：2026 年 2 月 · 由 Claude 辅助生成</p>
+</div>
+
+</body>
+</html>

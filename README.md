@@ -18,3 +18,6 @@
 ## 部署
 
 详见 [deployment-guide.md](./deployment-guide.md) 或 [deployment-guide.html](./deployment-guide.html)。
+
+## 网址
+https://tsinghua-bid-screener.vercel.app

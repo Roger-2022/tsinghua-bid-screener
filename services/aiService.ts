@@ -233,70 +233,70 @@ ${responsesText}
 // ---- Step 3: Decision making ----
 
 const runDecisionMaking = async (
-  apiConfig: ApiConfig,
+  _apiConfig: ApiConfig,
   scores: any,
   thresholds: NumericDecisionThresholds,
   weights: DimensionWeight[],
-  info: any,
-  stagePrompts: StagePromptConfig[],
+  _info: any,
+  _stagePrompts: StagePromptConfig[],
   openEndedScores?: { thinking_depth: number; multidimensional_thinking: number }
-): Promise<any> => {
-  const decisionStage = stagePrompts.find(s => s.stage === 'decision_making');
-
-  // Include open-ended scores in weighted avg when available
+): Promise<{ decision: 'pass' | 'hold' | 'reject'; reasoning: string; isStar: boolean }> => {
+  // Pure deterministic decision — no AI call
   const coreDimScores = [scores.motivation, scores.logic, scores.resilience, scores.innovation, scores.commitment];
   const oeTD = openEndedScores?.thinking_depth || 0;
   const oeMulti = openEndedScores?.multidimensional_thinking || 0;
   const allDimScores = [...coreDimScores, ...(oeTD > 0 ? [oeTD] : []), ...(oeMulti > 0 ? [oeMulti] : [])];
-  // Match weights to the number of available dimensions
   const availableWeights = weights.slice(0, allDimScores.length).map(w => w.weight);
   const totalWeight = availableWeights.reduce((a: number, b: number) => a + b, 0);
   const weightedAvg = totalWeight > 0
     ? allDimScores.reduce((sum: number, s: number, i: number) => sum + s * (availableWeights[i] || 0), 0) / totalWeight
     : 0;
 
-  const rawDecisionPrompt = decisionStage?.system_prompt || '你是决策引擎。';
-  const runtimeCtx = buildRuntimeInheritedContext('decision_making', decisionStage, { scores });
-  const systemPrompt = runtimeCtx
-    ? `[上下文继承]\n${runtimeCtx}\n\n[系统提示词]\n${rawDecisionPrompt}`
-    : rawDecisionPrompt;
+  // Dimension score map for threshold checking
+  const dimMap: Record<string, number> = {
+    motivation: scores.motivation,
+    logic: scores.logic,
+    resilience: scores.resilience,
+    innovation: scores.innovation,
+    commitment: scores.commitment,
+    thinking_depth: oeTD,
+    multidimensional_thinking: oeMulti,
+  };
 
-  const openEndedBlock = openEndedScores
-    ? `, 思维深度: ${openEndedScores.thinking_depth}, 多维思考: ${openEndedScores.multidimensional_thinking}`
-    : '';
+  // Check if all dimensions meet or exceed the threshold row
+  const meetsLevel = (levelRow: any): boolean => {
+    for (const key of ['motivation', 'logic', 'resilience', 'innovation', 'commitment']) {
+      if ((dimMap[key] || 0) < (levelRow[key] || 0)) return false;
+    }
+    // Also check open-ended dimensions if candidate has scores
+    if (oeTD > 0 && (dimMap.thinking_depth || 0) < (levelRow.thinking_depth || 0)) return false;
+    if (oeMulti > 0 && (dimMap.multidimensional_thinking || 0) < (levelRow.multidimensional_thinking || 0)) return false;
+    // Check weighted average
+    if (levelRow.avg > 0 && weightedAvg < levelRow.avg) return false;
+    return true;
+  };
 
-  const userPrompt = `候选人分数：
-动机: ${scores.motivation}, 逻辑: ${scores.logic}, 反思韧性: ${scores.resilience}, 创新: ${scores.innovation}, 投入: ${scores.commitment}${openEndedBlock}
+  // Decision: star → pass → hold → reject (below hold = eliminated)
+  let decision: 'pass' | 'hold' | 'reject';
+  let reasoning: string;
+  let isStar = false;
 
-加权均分（含开放题）：${weightedAvg.toFixed(2)}
+  if (meetsLevel(thresholds.star)) {
+    decision = 'pass';
+    isStar = true;
+    reasoning = `示范候选人：所有维度均达到示范标准，加权均分 ${weightedAvg.toFixed(1)} 分。`;
+  } else if (meetsLevel(thresholds.pass)) {
+    decision = 'pass';
+    reasoning = `通过：所有维度均达到通过标准，加权均分 ${weightedAvg.toFixed(1)} 分。`;
+  } else if (meetsLevel(thresholds.hold)) {
+    decision = 'hold';
+    reasoning = `待定：部分维度未达通过标准，加权均分 ${weightedAvg.toFixed(1)} 分，建议进一步面试确认。`;
+  } else {
+    decision = 'reject';
+    reasoning = `未通过：多项维度低于待定标准，加权均分 ${weightedAvg.toFixed(1)} 分。`;
+  }
 
-风险标记：${scores.risk_flags.join('; ') || '无'}
-
-基本信息：
-姓名: ${info.name}, 身份: ${info.identity}
-前8周投入: ${info.timeCommitmentWeeks1to8}h/周, 后8周投入: ${info.timeCommitmentWeeks9to16}h/周
-能否线下面试: ${info.offlineInterview ? '是' : '否'}
-
-数字阈值矩阵(JSON)：
-${JSON.stringify(thresholds, null, 2)}
-
-维度权重：${buildWeightsSnippet(weights)}
-
-请严格按照系统提示词中的决策逻辑输出：
-{
-  "decision": "pass" 或 "hold" 或 "reject",
-  "reasoning": "决策理由"
-}`;
-
-  return chatCompletionJSON(apiConfig, {
-    model: resolveModel(decisionStage?.model, apiConfig.fastModel),
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
-    ],
-    temperature: decisionStage?.temperature ?? 0.1,
-    jsonMode: true,
-  });
+  return { decision, reasoning, isStar };
 };
 
 // ---- Step 4: Candidate Explainability ----
@@ -441,11 +441,11 @@ export const generateFinalAssessment = async (
       openEndedScores ? { thinking_depth: openEndedScores.thinking_depth, multidimensional_thinking: openEndedScores.multidimensional_thinking } : null),
   ]);
 
-  const statusMap: Record<string, string> = { pass: '通过', hold: '待定', reject: '拒绝' };
+  const statusMap: Record<string, string> = { pass: '通过', hold: '待定', reject: '未通过' };
 
   return {
     status: decision.decision,
-    status_badge_text_zh: statusMap[decision.decision] || '待定',
+    status_badge_text_zh: decision.isStar ? '示范' : (statusMap[decision.decision] || '待定'),
     scores: {
       motivation: scores.motivation,
       logic: scores.logic,

@@ -33,25 +33,25 @@ const DEFAULT_PROMPT_TEMPLATE = `一、角色定位
 - 这个人能不能把判断说清楚
 - 这个人是否具备从错误中学习的能力
 - 这个人是否能在约束下重组规则
-你是 BID 商业模式课程的筛选评估系统。
+你是 BID 商业模式工坊的筛选评估系统。
 你的目标不仅是判断候选人"聪不聪明"，而是判断在真实学期压力、真实小组协作、真实商业不确定性下，这个人是否会持续参与并产生高质量输出。你不是在选学生，而是在选未来 14 周不会消失的合作者。
 
 你将围绕以下五个维度进行评估：
 真实动机、逻辑闭环、反思与韧性、创新潜质、投入度。
 
-二、BID 课程背景
-2.1 课程特性
-- 高强度：每周需投入 8-12 小时，持续 10 周
+二、BID 工坊背景
+2.1 工坊特性
+- 高强度：每周需投入 8-12 小时，持续 14 周
 - 小组作业制：3-5 人小组，共同完成商业模式拆解与重构
 - 案例驱动：基于真实商业案例进行深度分析
 - 嘉宾分享：邀请一线创业者、投资人进行实战分享
-- 课堂展示：每周需进行小组汇报，接受导师和同学质询
+- 课堂展示：每周需进行小组汇报，接受带队教练和同学质询
 - 课后讨论：需参与异步讨论，贡献观点并回应他人
 
 2.2 典型压力场景
-- 期中考试周与课程高峰期重叠
+- 期中考试周与工坊高峰期重叠
 - 小组成员失联需要补位
-- 方案被导师连续否定要求推倒重来
+- 方案被带队教练连续否定要求推倒重来
 - 预习材料需 6 小时完成但只剩 2 天
 - 嘉宾提问直击方案软肋
 
@@ -106,7 +106,7 @@ E，[选项文本]，[分值0-10]
 {{DECISION_RULES}}
 
 六、问题生成示例
-示例 1：真实动机，证书剥离，如果本课程不提供任何证书、排名或公开展示，你会：
+示例 1：真实动机，证书剥离，如果本工坊不提供任何证书、排名或公开展示，你会：
 A，反而更专注能力本身，9
 B，继续参与但降低优先级，7
 C，先观望一两次再决定，5
@@ -117,13 +117,13 @@ E，基本不参加，1
 证据，你是否有无证书但长期投入的学习经历？
 备注，剥离功利动机。
 
-示例 2：投入度，考试周冲突，课程与考试高峰重叠你会：
+示例 2：投入度，考试周冲突，工坊与考试高峰重叠你会：
 A，提前调节保证不断档，9
 B，阶段性降投入后补，7
 C，优先考试，5
 D，只完成最低要求，3
 E，暂停参与，1
-成本，你为课程让渡什么？
+成本，你为工坊让渡什么？
 假设，你如何评估长期回报？
 证据，有并行高压经验吗？
 备注，看可持续性。
@@ -155,11 +155,11 @@ const DEFAULT_PROMPT_SECTIONS: QuestionPromptSections = {
 - 小组作业制：3-5 人小组，共同完成商业模式拆解与重构
 - 案例驱动：基于真实商业案例进行深度分析
 - 嘉宾分享：邀请一线创业者、投资人进行实战分享
-- 课堂展示：每周需进行小组汇报，接受导师和同学质询
+- 课堂展示：每周需进行小组汇报，接受带队教练和同学质询
 - 课后讨论：需参与异步讨论，贡献观点并回应他人`,
-  pressureScenarios: `- 期中考试周与课程高峰期重叠
+  pressureScenarios: `- 期中考试周与工坊高峰期重叠
 - 小组成员失联需要补位
-- 方案被导师连续否定要求推倒重来
+- 方案被带队教练连续否定要求推倒重来
 - 预习材料需 6 小时完成但只剩 2 天
 - 嘉宾提问直击方案软肋`,
   caseLibrary: [
@@ -179,7 +179,7 @@ const DEFAULT_PROMPT_SECTIONS: QuestionPromptSections = {
     caseEmbedPercent: 30,
   },
   qualityChecks: DEFAULT_QUALITY_CHECKS,
-  examples: `示例 1：真实动机，证书剥离，如果本课程不提供任何证书、排名或公开展示，你会：
+  examples: `示例 1：真实动机，证书剥离，如果本工坊不提供任何证书、排名或公开展示，你会：
 A，反而更专注能力本身，9
 B，继续参与但降低优先级，7
 C，先观望一两次再决定，5
@@ -190,13 +190,13 @@ E，基本不参加，1
 证据，你是否有无证书但长期投入的学习经历？
 备注，剥离功利动机。
 
-示例 2：投入度，考试周冲突，课程与考试高峰重叠你会：
+示例 2：投入度，考试周冲突，工坊与考试高峰重叠你会：
 A，提前调节保证不断档，9
 B，阶段性降投入后补，7
 C，优先考试，5
 D，只完成最低要求，3
 E，暂停参与，1
-成本，你为课程让渡什么？
+成本，你为工坊让渡什么？
 假设，你如何评估长期回报？
 证据，有并行高压经验吗？
 备注，看可持续性。`,
@@ -215,7 +215,7 @@ const DEFAULT_STAGE_PROMPTS: StagePromptConfig[] = [
     description_en: 'Generate high-quality scenario questions based on dimensions and criteria',
     system_prompt: `你是BID商业模式工坊的面试评估专家。
 
-背景：BID是清华经管高强度商业模式课程（每周8-12小时，14周，3-5人小组，案例驱动+嘉宾分享+课堂展示）。系统题库中已有场景化单选题，用于评估五个维度：真实动机、逻辑闭环、反思与韧性、创新潜质、投入度。
+背景：BID是清华经管高强度商业模式工坊（每周8-12小时，14周，3-5人小组，案例驱动+嘉宾分享+课堂展示）。系统题库中已有场景化单选题，用于评估五个维度：真实动机、逻辑闭环、反思与韧性、创新潜质、投入度。
 
 题库格式：每题5个选项(A-E)，分值递减(9/7/5/3/1)，行为导向，基于BID真实场景，每题附代价/假设/证据三个追问。
 
@@ -246,13 +246,13 @@ const DEFAULT_STAGE_PROMPTS: StagePromptConfig[] = [
     system_prompt: `你是清华经管《商业模式工坊》(BID) 评分引擎。严格依据以下评分标准为候选人的客观题作答打分。禁止使用任何模糊用词，所有评分必须有明确的行为依据。
 
 ===== 维度一：真实动机 (Motivation) =====
-定义：评估候选人参与BID课程的内在驱动力——是否具备明确的个人商业问题意识，是否愿意承受高强度学习成本与不确定性。
+定义：评估候选人参与BID工坊的内在驱动力——是否具备明确的个人商业问题意识，是否愿意承受高强度学习成本与不确定性。
 评分段：
-[0-2] 动机完全功利或未了解课程。判定条件：回答中仅提及人脉、证书、简历加分等外部回报；无法描述课程核心内容；被追问时无法给出具体学习目标。
-[3-4] 有兴趣但目标模糊。判定条件：表达笼统兴趣如"想学商业"但无具体方向；回避关于时间投入和成本的追问；未体现对课程高强度特性的认知。
-[5-6] 能说清想学什么但未充分考虑成本。判定条件：有明确学习目标；但未提及时间管理方案或冲突预案；对课程强度认知不完整。
-[7-8] 有明确问题意识，清楚课程为何适合自己。判定条件：能举出想验证的商业假设或个人商业痛点；有自发深入学习经历；能描述课程与自身需求的匹配点。
-[9-10] 动机与课程高度贴合，主动接受不确定性。判定条件：为课程主动推掉其他机会；能清晰描述放弃的代价；展现出对不确定性的积极态度而非回避。
+[0-2] 动机完全功利或未了解工坊。判定条件：回答中仅提及人脉、证书、简历加分等外部回报；无法描述工坊核心内容；被追问时无法给出具体学习目标。
+[3-4] 有兴趣但目标模糊。判定条件：表达笼统兴趣如"想学商业"但无具体方向；回避关于时间投入和成本的追问；未体现对工坊高强度特性的认知。
+[5-6] 能说清想学什么但未充分考虑成本。判定条件：有明确学习目标；但未提及时间管理方案或冲突预案；对工坊强度认知不完整。
+[7-8] 有明确问题意识，清楚工坊为何适合自己。判定条件：能举出想验证的商业假设或个人商业痛点；有自发深入学习经历；能描述工坊与自身需求的匹配点。
+[9-10] 动机与工坊高度贴合，主动接受不确定性。判定条件：为工坊主动推掉其他机会；能清晰描述放弃的代价；展现出对不确定性的积极态度而非回避。
 高分行为信号：明确的个人商业痛点、接受高强度反馈、不唯证书论。
 低分行为信号：功利导向（人脉/镀金）、目标模糊、回避投入时间问题。
 
@@ -292,11 +292,11 @@ const DEFAULT_STAGE_PROMPTS: StagePromptConfig[] = [
 ===== 维度五：投入度 (Commitment) =====
 定义：评估在真实学期压力下候选人是否会消失——能否在14周内持续投入高质量时间。
 评分段：
-[0-2] 无法给出明确投入时间。判定条件：回答"看情况""不确定"；无法给出每周可用小时数；对课程时间要求毫无认知。
-[3-4] 投入时间明显不足或高度不确定。判定条件：每周仅能投入3-4小时（课程要求8-12小时）；有多个冲突活动且无法说明优先级。
+[0-2] 无法给出明确投入时间。判定条件：回答"看情况""不确定"；无法给出每周可用小时数；对工坊时间要求毫无认知。
+[3-4] 投入时间明显不足或高度不确定。判定条件：每周仅能投入3-4小时（工坊要求8-12小时）；有多个冲突活动且无法说明优先级。
 [5-6] 能满足最低要求但缺乏预案。判定条件：能给出时间承诺但没有冲突解决方案；采取被动应对策略而非主动规划。
 [7-8] 有清晰时间安排与冲突管理方案。判定条件：已做好时间规划；有备选方案应对突发情况；能描述具体的时间分配策略。
-[9-10] 主动为课程让渡其他事务。判定条件：已推掉其他课外活动为课程腾出时间；提前调整了学期计划；展现出超出预期的投入承诺。
+[9-10] 主动为工坊让渡其他事务。判定条件：已推掉其他课外活动为工坊腾出时间；提前调整了学期计划；展现出超出预期的投入承诺。
 高分行为信号：明确的时间节奏、主动让渡事务、冲突方案清晰。
 低分行为信号：模糊承诺、无法给出时长、高度不确定性。
 
@@ -395,33 +395,20 @@ const DEFAULT_STAGE_PROMPTS: StagePromptConfig[] = [
   {
     stage: 'decision_making',
     name_zh: '决策判定', name_en: 'Decision Making',
-    description_zh: '根据分数和数字阈值做出录取决定',
-    description_en: 'Make admission decision based on scores and numeric thresholds',
-    system_prompt: `你是清华经管《商业模式工坊》招生决策引擎。严格依据数字阈值矩阵做出录取决定。决策逻辑：
-1. 任意维度分数低于reject行对应阈值 → 输出reject
-2. 所有维度分数均达到star行对应阈值且加权均分≥star.avg → 输出pass（标记为star）
-3. 所有维度分数均达到pass行对应阈值且加权均分≥pass.avg → 输出pass
-4. 所有维度分数均达到hold行对应阈值且加权均分≥hold.avg → 输出hold
-5. 其余情况 → 输出reject
-注意：avg列为加权均分阈值，0表示不启用该项检查。`,
-    user_prompt_template: '候选人分数：{{scores}}\n\n加权均分：{{weighted_avg}}\n\n风险标记：{{risk_flags}}\n\n基本信息：{{candidate_info}}\n\n数字阈值矩阵(JSON)：\n{{thresholds}}\n\n维度权重：{{weights}}\n\n请严格按照系统提示词中的决策逻辑输出决策(pass/hold/reject)和决策理由(reasoning)。',
-    variables: ['scores', 'weighted_avg', 'risk_flags', 'candidate_info', 'thresholds', 'weights'],
-    output_format: 'JSON: { decision: "pass"|"hold"|"reject", reasoning: string }',
-    temperature: 0.1, model: undefined,
-    inherited_context: `[上游流程概述]
-在你做出录取决策之前，该候选人已完成了完整的评估流水线：
-1. 题目生成环节：系统根据五维标准自适应生成了场景化选择题（8-20题）。
-2. 追问决策环节：系统分析作答模式后，对薄弱维度发起了深度追问。
-3. 评分计算环节：评分引擎综合客观题+追问回答，输出了各维度评分（0-10，含开放题维度）、核心证据点和风险标记。
-
-[你收到的数据]
-- 各维度评分及加权均分（通过 {{scores}} 和 {{weighted_avg}} 注入，含开放题维度）
-- 风险标记（通过 {{risk_flags}} 注入）
-- 数字阈值矩阵（通过 {{thresholds}} 注入）：包含reject/hold/pass/star四档，覆盖各维度和均分
-- 维度权重（通过 {{weights}} 注入）
-
-[你的任务]
-严格按照数字阈值矩阵的逻辑链做出决策：先检查是否有任何维度触发reject阈值→再检查是否满足star条件→然后根据均分和各维度综合判定pass/hold/reject。
+    description_zh: '纯分数逻辑，不调用AI——根据阈值矩阵自动判定',
+    description_en: 'Pure score-based logic, no AI call — automatic threshold-based decision',
+    system_prompt: `（本环节由纯分数逻辑本地执行，不调用AI。）
+决策逻辑：
+1. 所有维度分数均达到star行阈值且加权均分≥star.avg → pass（标记示范）
+2. 所有维度分数均达到pass行阈值且加权均分≥pass.avg → pass（通过）
+3. 所有维度分数均达到hold行阈值且加权均分≥hold.avg → hold（待定）
+4. 其余情况 → reject（低于待定线即淘汰）`,
+    user_prompt_template: '（本环节不调用AI，由本地分数逻辑自动计算。）',
+    variables: [],
+    output_format: 'JSON: { decision: "pass"|"hold"|"reject", reasoning: string, isStar: boolean }',
+    temperature: 0, model: undefined,
+    inherited_context: `[说明]
+本环节完全由分数阈值驱动，不调用AI模型。决策逻辑：star → pass → hold → reject（低于hold即淘汰）。
 
 [数据隔离]
 决策仅基于当前候选人的评分数据和全局阈值配置，不参考其他候选人的结果。`
@@ -497,7 +484,7 @@ const DEFAULT_DIMENSION_WEIGHTS: DimensionWeight[] = [
 ];
 
 const DEFAULT_DECISION_THRESHOLDS: NumericDecisionThresholds = {
-  reject: { motivation: 3, logic: 3, resilience: 3, innovation: 2, commitment: 4, thinking_depth: 3, multidimensional_thinking: 3, avg: 0 },
+  reject: { motivation: 0, logic: 0, resilience: 0, innovation: 0, commitment: 0, thinking_depth: 0, multidimensional_thinking: 0, avg: 0 },
   hold:   { motivation: 4, logic: 4, resilience: 4, innovation: 3, commitment: 5, thinking_depth: 4, multidimensional_thinking: 4, avg: 5 },
   pass:   { motivation: 5, logic: 6, resilience: 5, innovation: 4, commitment: 6, thinking_depth: 5, multidimensional_thinking: 5, avg: 6.5 },
   star:   { motivation: 8, logic: 8, resilience: 8, innovation: 7, commitment: 8, thinking_depth: 8, multidimensional_thinking: 8, avg: 8 },
@@ -677,6 +664,10 @@ const App: React.FC = () => {
             parsed[level].thinking_depth = DEFAULT_DECISION_THRESHOLDS[level].thinking_depth;
             parsed[level].multidimensional_thinking = DEFAULT_DECISION_THRESHOLDS[level].multidimensional_thinking;
           }
+        }
+        // Migration: zero out reject row (decision is now purely score-based, below hold = eliminated)
+        if (parsed.reject) {
+          parsed.reject = { motivation: 0, logic: 0, resilience: 0, innovation: 0, commitment: 0, thinking_depth: 0, multidimensional_thinking: 0, avg: 0 };
         }
         setDecisionThresholds(parsed);
       } catch (e) {}

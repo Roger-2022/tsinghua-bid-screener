@@ -42,7 +42,11 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.wechat || !formData.schoolOrUnit || !formData.phone || !formData.selfDescription) {
+    if (
+      !formData.name || !formData.wechat || !formData.schoolOrUnit || !formData.phone || !formData.selfDescription ||
+      !formData.major || !formData.gradeOrLevel || !formData.yearOrExperience || !formData.email || !formData.projects ||
+      formData.timeCommitmentWeeks1to8 <= 0 || formData.timeCommitmentWeeks9to16 <= 0
+    ) {
       setValidationError(true);
       return;
     }
@@ -115,13 +119,14 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-xs font-black text-gray-400 uppercase mb-2">
-                {t.identity}
+                {t.identity} <span className="text-red-400">*</span>
               </label>
               <select
                 name="identity"
                 value={formData.identity}
                 onChange={handleChange}
                 className="w-full px-5 py-3 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-tsinghua-100 outline-none bg-gray-50/50 font-black"
+                required
               >
                 {identityKeys.map((key) => (
                   <option key={key} value={key}>
@@ -150,7 +155,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-xs font-black text-gray-400 uppercase mb-2">
-                {t.major}
+                {t.major} <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
@@ -159,11 +164,12 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang }) => {
                 value={formData.major}
                 onChange={handleChange}
                 className="w-full px-5 py-3 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-tsinghua-100 outline-none bg-gray-50/50 font-medium"
+                required
               />
             </div>
             <div>
               <label className="block text-xs font-black text-gray-400 uppercase mb-2">
-                {t.gradeLevel}
+                {t.gradeLevel} <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
@@ -172,6 +178,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang }) => {
                 value={formData.gradeOrLevel}
                 onChange={handleChange}
                 className="w-full px-5 py-3 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-tsinghua-100 outline-none bg-gray-50/50 font-medium"
+                required
               />
             </div>
           </div>
@@ -180,7 +187,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-xs font-black text-gray-400 uppercase mb-2">
-                {t.yearOrExp}
+                {t.yearOrExp} <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
@@ -189,6 +196,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang }) => {
                 value={formData.yearOrExperience}
                 onChange={handleChange}
                 className="w-full px-5 py-3 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-tsinghua-100 outline-none bg-gray-50/50 font-medium"
+                required
               />
             </div>
             <div>
@@ -210,7 +218,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang }) => {
           {/* Email */}
           <div>
             <label className="block text-xs font-black text-gray-400 uppercase mb-2">
-              {t.email}
+              {t.email} <span className="text-red-400">*</span>
             </label>
             <input
               type="email"
@@ -219,6 +227,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang }) => {
               value={formData.email}
               onChange={handleChange}
               className="w-full px-5 py-3 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-tsinghua-100 outline-none bg-gray-50/50 font-medium"
+              required
             />
           </div>
 
@@ -231,30 +240,32 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang }) => {
             </div>
             <div>
               <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
-                {t.weekPhase1}
+                {t.weekPhase1} <span className="text-red-400">*</span>
               </label>
               <input
                 type="number"
                 name="timeCommitmentWeeks1to8"
                 value={formData.timeCommitmentWeeks1to8 || ''}
                 onChange={handleChange}
-                min={0}
+                min={1}
                 placeholder={lang === 'CN' ? '例如 10' : 'e.g. 10'}
                 className="w-full px-5 py-2.5 border border-tsinghua-100 rounded-xl outline-none focus:ring-4 focus:ring-tsinghua-200 font-black text-tsinghua-700 placeholder:text-gray-300 placeholder:font-medium"
+                required
               />
             </div>
             <div>
               <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">
-                {t.weekPhase2}
+                {t.weekPhase2} <span className="text-red-400">*</span>
               </label>
               <input
                 type="number"
                 name="timeCommitmentWeeks9to16"
                 value={formData.timeCommitmentWeeks9to16 || ''}
                 onChange={handleChange}
-                min={0}
+                min={1}
                 placeholder={lang === 'CN' ? '例如 10' : 'e.g. 10'}
                 className="w-full px-5 py-2.5 border border-tsinghua-100 rounded-xl outline-none focus:ring-4 focus:ring-tsinghua-200 font-black text-tsinghua-700 placeholder:text-gray-300 placeholder:font-medium"
+                required
               />
             </div>
           </div>
@@ -263,7 +274,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang }) => {
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">
-                {t.projects} ({t.projectsLimit})
+                {t.projects} ({t.projectsLimit}) <span className="text-red-400">*</span>
               </label>
               <span
                 className={`text-[10px] font-bold ${
@@ -281,6 +292,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang }) => {
               maxLength={150}
               placeholder={t.projectsPlaceholder}
               className="w-full px-5 py-4 border border-gray-100 rounded-3xl resize-none focus:ring-4 focus:ring-tsinghua-100 outline-none bg-gray-50/50 font-medium"
+              required
             />
           </div>
 
@@ -295,7 +307,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang }) => {
                 className="w-6 h-6 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
               />
               <span className="text-sm font-bold text-gray-700 group-hover:text-tsinghua-600 transition">
-                {t.offlineInterview}
+                {t.offlineInterview} <span className="text-red-400">*</span>
               </span>
             </label>
             <label className="flex items-center gap-4 cursor-pointer group">
@@ -307,7 +319,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang }) => {
                 className="w-6 h-6 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
               />
               <span className="text-sm font-bold text-gray-700 group-hover:text-tsinghua-600 transition">
-                {t.willingness} ({t.willingnessNote})
+                {t.willingness} ({t.willingnessNote}) <span className="text-red-400">*</span>
               </span>
             </label>
             <label className="flex items-center gap-4 cursor-pointer group">
@@ -319,7 +331,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang }) => {
                 className="w-6 h-6 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
               />
               <span className="text-sm font-bold text-gray-700 group-hover:text-tsinghua-600 transition">
-                {t.leader}
+                {t.leader} <span className="text-red-400">*</span>
               </span>
             </label>
           </div>

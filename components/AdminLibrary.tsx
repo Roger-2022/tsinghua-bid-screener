@@ -7,6 +7,7 @@ import { translations } from '../i18n';
 import { processImportData } from '../services/importService';
 import { isExampleCandidate } from '../data/exampleCandidates';
 import { isTestCandidate } from '../services/quickPreviewService';
+import { deleteCandidate } from '../services/candidateService';
 import ExportColumnSelector from './ExportColumnSelector';
 import ImportInfoPanel from './ImportInfoPanel';
 import BatchCalibrationPanel from './BatchCalibrationPanel';
@@ -134,8 +135,8 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
     setEditRecord(updated);
   };
 
-  // ---- Delete ----
-  const handleDelete = (id: string) => {
+  // ---- Delete (sync to Supabase) ----
+  const handleDelete = async (id: string) => {
     if (isExampleCandidate(id)) {
       alert(isCN ? '示例数据不可删除' : 'Example data cannot be deleted');
       return;
@@ -144,6 +145,7 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
       ? '确定要删除这位候选人吗？此操作不可撤销。'
       : 'Are you sure you want to delete this candidate? This cannot be undone.';
     if (confirm(msg)) {
+      await deleteCandidate(id);
       const updated = candidates.filter(c => c.candidate_id !== id);
       onUpdate(updated);
       if (selectedId === id) setSelectedId(null);

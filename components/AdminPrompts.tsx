@@ -433,7 +433,6 @@ const AdminPrompts: React.FC<Props> = ({ promptConfig, onUpdate, dimensionWeight
   };
 
   const levelConfigs: { key: keyof NumericDecisionThresholds; label: string; color: string; bgRow: string }[] = [
-    { key: 'reject', label: t.rejectThreshold, color: 'text-red-600', bgRow: 'bg-red-50/60' },
     { key: 'hold', label: t.holdThreshold, color: 'text-amber-600', bgRow: 'bg-amber-50/60' },
     { key: 'pass', label: t.passThreshold, color: 'text-green-600', bgRow: 'bg-green-50/60' },
     { key: 'star', label: t.starThreshold, color: 'text-tsinghua-600', bgRow: 'bg-tsinghua-50/60' },

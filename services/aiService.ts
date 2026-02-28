@@ -150,6 +150,12 @@ const runScoreCalculation = async (
 
   const userPrompt = `维度权重：\n${weightsSnippet}\n\n客观题回答：\n${responsesText}\n\n追问回答：\n${probingText}\n\n请严格依据系统提示词中的评分标准，输出各维度分数(0-10整数)、核心证据点和风险标记。
 
+**严格评分要求**：
+- 追问回答（代价/假设/证据）是核心评分依据。如果追问回答是乱填内容（随机数字、无意义字符）、敷衍回答（如"不知道"、"没有"）或与问题完全无关，该维度最高给 2 分
+- 追问回答只有一两句无实质内容的话，该维度最高给 3 分
+- 仅凭客观题选项得分不足以给高分，必须结合追问回答的质量综合评估
+- 不可给同情分，严格基于候选人实际展现的思考深度来打分
+
 请严格按照以下JSON格式输出：
 {
   "motivation": <0-10整数>,
@@ -242,10 +248,12 @@ const runDecisionMaking = async (
   openEndedScores?: { thinking_depth: number; multidimensional_thinking: number }
 ): Promise<{ decision: 'pass' | 'hold' | 'reject'; reasoning: string; isStar: boolean }> => {
   // Pure deterministic decision — no AI call
+  const hasOpenEnded = openEndedScores !== undefined && openEndedScores !== null;
   const coreDimScores = [scores.motivation, scores.logic, scores.resilience, scores.innovation, scores.commitment];
   const oeTD = openEndedScores?.thinking_depth || 0;
   const oeMulti = openEndedScores?.multidimensional_thinking || 0;
-  const allDimScores = [...coreDimScores, ...(oeTD > 0 ? [oeTD] : []), ...(oeMulti > 0 ? [oeMulti] : [])];
+  // Always include open-ended scores in weighted average when candidate had the question (even if 0)
+  const allDimScores = [...coreDimScores, ...(hasOpenEnded ? [oeTD, oeMulti] : [])];
   const availableWeights = weights.slice(0, allDimScores.length).map(w => w.weight);
   const totalWeight = availableWeights.reduce((a: number, b: number) => a + b, 0);
   const weightedAvg = totalWeight > 0
@@ -264,13 +272,16 @@ const runDecisionMaking = async (
   };
 
   // Check if all dimensions meet or exceed the threshold row
+  // When candidate had open-ended question, ALWAYS check those dimensions (even if score = 0)
   const meetsLevel = (levelRow: any): boolean => {
     for (const key of ['motivation', 'logic', 'resilience', 'innovation', 'commitment']) {
       if ((dimMap[key] || 0) < (levelRow[key] || 0)) return false;
     }
-    // Also check open-ended dimensions if candidate has scores
-    if (oeTD > 0 && (dimMap.thinking_depth || 0) < (levelRow.thinking_depth || 0)) return false;
-    if (oeMulti > 0 && (dimMap.multidimensional_thinking || 0) < (levelRow.multidimensional_thinking || 0)) return false;
+    // Always check open-ended dimensions when candidate had the open-ended question
+    if (hasOpenEnded) {
+      if ((dimMap.thinking_depth || 0) < (levelRow.thinking_depth || 0)) return false;
+      if ((dimMap.multidimensional_thinking || 0) < (levelRow.multidimensional_thinking || 0)) return false;
+    }
     // Check weighted average
     if (levelRow.avg > 0 && weightedAvg < levelRow.avg) return false;
     return true;
@@ -381,12 +392,20 @@ const runOpenEndedScoring = async (
 候选人回答：
 ${openEndedData.answer}
 
-请评估思维深度和多维思考两个维度，输出分数和证据。严格按以下JSON格式输出：
+请评估思维深度和多维思考两个维度，输出分数和证据。
+
+**严格评分要求**：
+- 如果回答是乱填内容（如随机数字、无意义字符、重复字符等），两项均给 0 分
+- 如果回答只有一两句话且无实质分析内容，两项均给 0-1 分
+- 如果回答与题目完全无关，两项均给 0 分
+- 必须基于候选人实际展现的分析深度和多角度思考来打分，不可给同情分
+
+严格按以下JSON格式输出：
 {
   "thinking_depth": <0-10整数>,
   "multidimensional_thinking": <0-10整数>,
-  "depth_evidence": "思维深度评分依据（引用候选人具体内容）",
-  "multidim_evidence": "多维思考评分依据（引用候选人具体内容）"
+  "depth_evidence": "思维深度评分依据（引用候选人具体内容，若为0分请说明原因）",
+  "multidim_evidence": "多维思考评分依据（引用候选人具体内容，若为0分请说明原因）"
 }`;
 
   try {

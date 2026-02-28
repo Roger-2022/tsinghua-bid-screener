@@ -479,7 +479,28 @@ $$ <span class="sql-kw">LANGUAGE</span> plpgsql;
 <span class="sql-kw">CREATE POLICY</span> <span class="sql-string">"anon_insert"</span>  <span class="sql-kw">ON</span> candidates <span class="sql-kw">FOR INSERT WITH CHECK</span> (<span class="sql-kw">true</span>);
 <span class="sql-kw">CREATE POLICY</span> <span class="sql-string">"auth_select"</span> <span class="sql-kw">ON</span> candidates <span class="sql-kw">FOR SELECT USING</span> (auth.role() = <span class="sql-string">'authenticated'</span>);
 <span class="sql-kw">CREATE POLICY</span> <span class="sql-string">"auth_update"</span> <span class="sql-kw">ON</span> candidates <span class="sql-kw">FOR UPDATE USING</span> (auth.role() = <span class="sql-string">'authenticated'</span>);
-<span class="sql-kw">CREATE POLICY</span> <span class="sql-string">"auth_delete"</span> <span class="sql-kw">ON</span> candidates <span class="sql-kw">FOR DELETE USING</span> (auth.role() = <span class="sql-string">'authenticated'</span>);</code></pre>
+<span class="sql-kw">CREATE POLICY</span> <span class="sql-string">"auth_delete"</span> <span class="sql-kw">ON</span> candidates <span class="sql-kw">FOR DELETE USING</span> (auth.role() = <span class="sql-string">'authenticated'</span>);
+
+<span class="sql-comment">-- ============================================</span>
+<span class="sql-comment">-- 2. 建表：snapshots（系统备份快照表）</span>
+<span class="sql-comment">-- ============================================</span>
+
+<span class="sql-kw">CREATE TABLE</span> snapshots (
+  id          <span class="sql-kw">TEXT PRIMARY KEY</span>,              <span class="sql-comment">-- 快照唯一标识</span>
+  label       <span class="sql-kw">TEXT NOT NULL</span>,                 <span class="sql-comment">-- 备份标签</span>
+  timestamp   <span class="sql-kw">BIGINT NOT NULL</span>,              <span class="sql-comment">-- 创建时间戳 (ms)</span>
+  data        <span class="sql-kw">JSONB NOT NULL</span>,               <span class="sql-comment">-- 完整系统状态快照</span>
+  created_at  <span class="sql-kw">TIMESTAMPTZ</span> <span class="sql-kw">DEFAULT</span> <span class="sql-func">now</span>()     <span class="sql-comment">-- 数据库记录创建时间</span>
+);
+
+<span class="sql-kw">CREATE INDEX</span> idx_snapshots_timestamp <span class="sql-kw">ON</span> snapshots(timestamp <span class="sql-kw">DESC</span>);
+
+<span class="sql-kw">ALTER TABLE</span> snapshots <span class="sql-kw">ENABLE ROW LEVEL SECURITY</span>;
+
+<span class="sql-kw">CREATE POLICY</span> <span class="sql-string">"auth_select"</span> <span class="sql-kw">ON</span> snapshots <span class="sql-kw">FOR SELECT USING</span> (auth.role() = <span class="sql-string">'authenticated'</span>);
+<span class="sql-kw">CREATE POLICY</span> <span class="sql-string">"auth_insert"</span> <span class="sql-kw">ON</span> snapshots <span class="sql-kw">FOR INSERT WITH CHECK</span> (auth.role() = <span class="sql-string">'authenticated'</span>);
+<span class="sql-kw">CREATE POLICY</span> <span class="sql-string">"auth_update"</span> <span class="sql-kw">ON</span> snapshots <span class="sql-kw">FOR UPDATE USING</span> (auth.role() = <span class="sql-string">'authenticated'</span>);
+<span class="sql-kw">CREATE POLICY</span> <span class="sql-string">"auth_delete"</span> <span class="sql-kw">ON</span> snapshots <span class="sql-kw">FOR DELETE USING</span> (auth.role() = <span class="sql-string">'authenticated'</span>);</code></pre>
 
     <ol start="4">
       <li>点 <strong>"Run"</strong>（或 Ctrl+Enter / Cmd+Enter）</li>

@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Language, SystemSnapshot } from '../types';
-import { listSnapshots, createSnapshot, restoreSnapshot, deleteSnapshot } from '../services/backupService';
+import { listSnapshots, createSnapshot, restoreSnapshot, deleteSnapshot, fetchSnapshots } from '../services/backupService';
+import { isSupabaseConfigured } from '../services/supabaseClient';
 import { translations } from '../i18n';
 
 interface Props {
@@ -16,17 +17,26 @@ const BackupManager: React.FC<Props> = ({ lang, isOpen, onClose }) => {
   const [snapshots, setSnapshots] = useState<SystemSnapshot[]>([]);
   const [newLabel, setNewLabel] = useState('');
   const [confirmRestore, setConfirmRestore] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const hasCloud = isSupabaseConfigured();
 
   useEffect(() => {
-    if (isOpen) setSnapshots(listSnapshots());
+    if (isOpen) {
+      setIsLoading(true);
+      fetchSnapshots().then(snaps => {
+        setSnapshots(snaps);
+        setIsLoading(false);
+      });
+    }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const label = newLabel.trim() || (isCN ? `手动备份 ${new Date().toLocaleString('zh-CN')}` : `Manual backup ${new Date().toLocaleString('en-US')}`);
-    createSnapshot(label);
-    setSnapshots(listSnapshots());
+    await createSnapshot(label);
+    const snaps = await fetchSnapshots();
+    setSnapshots(snaps);
     setNewLabel('');
   };
 
@@ -35,9 +45,10 @@ const BackupManager: React.FC<Props> = ({ lang, isOpen, onClose }) => {
     if (ok) window.location.reload();
   };
 
-  const handleDelete = (id: string) => {
-    deleteSnapshot(id);
-    setSnapshots(listSnapshots());
+  const handleDelete = async (id: string) => {
+    await deleteSnapshot(id);
+    const snaps = await fetchSnapshots();
+    setSnapshots(snaps);
   };
 
   const formatTime = (ts: number) => {
@@ -50,7 +61,15 @@ const BackupManager: React.FC<Props> = ({ lang, isOpen, onClose }) => {
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="font-bold text-gray-900 text-lg">{(t as any).backup_title || (isCN ? '版本备份' : 'Version Backup')}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-bold text-gray-900 text-lg">{(t as any).backup_title || (isCN ? '版本备份' : 'Version Backup')}</h2>
+            {hasCloud && (
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-500 text-[10px] font-bold rounded-full">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z"/></svg>
+                {isCN ? '云同步' : 'Cloud'}
+              </span>
+            )}
+          </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
         </div>
 
@@ -73,7 +92,11 @@ const BackupManager: React.FC<Props> = ({ lang, isOpen, onClose }) => {
 
         {/* Snapshots list */}
         <div className="px-6 py-4 overflow-y-auto max-h-[50vh] space-y-3">
-          {snapshots.length === 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="w-6 h-6 border-2 border-tsinghua-200 border-t-tsinghua-600 rounded-full animate-spin" />
+            </div>
+          ) : snapshots.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-8">{isCN ? '暂无备份' : 'No backups yet'}</p>
           ) : (
             snapshots.map(snap => (
@@ -81,7 +104,14 @@ const BackupManager: React.FC<Props> = ({ lang, isOpen, onClose }) => {
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-800 text-sm truncate">{snap.label}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{formatTime(snap.timestamp)}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <p className="text-xs text-gray-400">{formatTime(snap.timestamp)}</p>
+                      {hasCloud && (
+                        <span title={isCN ? '已同步至云端' : 'Synced to cloud'} className="text-blue-400">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z"/></svg>
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex gap-2 ml-3 flex-shrink-0">
                     {confirmRestore === snap.id ? (

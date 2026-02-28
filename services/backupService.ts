@@ -1,5 +1,6 @@
 
-import { CandidateRecord, QuestionTemplate, DimensionWeight, NumericDecisionThresholds, PromptConfig, DecisionTreeNode, ProbingStrategyConfig, WorkflowModuleConfig, ApiConfig, SystemSnapshot } from '../types';
+import { SystemSnapshot } from '../types';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 const STORAGE_KEY = 'tsinghua_snapshots';
 const MAX_SNAPSHOTS = 10;
@@ -19,7 +20,7 @@ const STATE_KEYS = [
   'tsinghua_prompt_versions',
 ] as const;
 
-export const createSnapshot = (label: string): SystemSnapshot => {
+export const createSnapshot = async (label: string): Promise<SystemSnapshot> => {
   const data: Record<string, any> = {};
   STATE_KEYS.forEach(key => {
     const raw = localStorage.getItem(key);
@@ -37,9 +38,23 @@ export const createSnapshot = (label: string): SystemSnapshot => {
 
   const existing = listSnapshots();
   existing.unshift(snapshot);
-  // Enforce max limit (FIFO)
   while (existing.length > MAX_SNAPSHOTS) existing.pop();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+
+  // Async sync to Supabase
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      const { error } = await supabase.from('snapshots').insert({
+        id: snapshot.id,
+        label: snapshot.label,
+        timestamp: snapshot.timestamp,
+        data: snapshot.data,
+      });
+      if (error) console.warn('[Supabase] Snapshot insert failed (localStorage OK):', error.message);
+    } catch (e) {
+      console.warn('[Supabase] Snapshot insert network error:', e);
+    }
+  }
 
   return snapshot;
 };
@@ -49,10 +64,8 @@ export const restoreSnapshot = (id: string): boolean => {
   const target = snapshots.find(s => s.id === id);
   if (!target) return false;
 
-  // Clear all state keys first
   STATE_KEYS.forEach(key => localStorage.removeItem(key));
 
-  // Write back from snapshot
   Object.entries(target.data).forEach(([key, value]) => {
     localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
   });
@@ -60,11 +73,21 @@ export const restoreSnapshot = (id: string): boolean => {
   return true;
 };
 
-export const deleteSnapshot = (id: string): void => {
+export const deleteSnapshot = async (id: string): Promise<void> => {
   const snapshots = listSnapshots().filter(s => s.id !== id);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshots));
+
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      const { error } = await supabase.from('snapshots').delete().eq('id', id);
+      if (error) console.warn('[Supabase] Snapshot delete failed:', error.message);
+    } catch (e) {
+      console.warn('[Supabase] Snapshot delete network error:', e);
+    }
+  }
 };
 
+/** Synchronous read from localStorage (for internal callers) */
 export const listSnapshots = (): SystemSnapshot[] => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -74,12 +97,58 @@ export const listSnapshots = (): SystemSnapshot[] => {
   }
 };
 
+/** Async fetch: merges Supabase cloud data with localStorage */
+export const fetchSnapshots = async (): Promise<SystemSnapshot[]> => {
+  const local = listSnapshots();
+
+  if (!isSupabaseConfigured() || !supabase) {
+    return local;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('snapshots')
+      .select('*')
+      .order('timestamp', { ascending: false });
+
+    if (error) {
+      console.warn('[Supabase] Snapshot fetch failed, using localStorage:', error.message);
+      return local;
+    }
+
+    // Merge: cloud takes precedence, add local-only snapshots
+    const cloudMap = new Map<string, SystemSnapshot>();
+    (data || []).forEach((row: any) => {
+      cloudMap.set(row.id, {
+        id: row.id,
+        label: row.label,
+        timestamp: row.timestamp,
+        data: row.data,
+      });
+    });
+
+    local.forEach(s => {
+      if (!cloudMap.has(s.id)) cloudMap.set(s.id, s);
+    });
+
+    const merged = Array.from(cloudMap.values()).sort((a, b) => b.timestamp - a.timestamp).slice(0, MAX_SNAPSHOTS);
+
+    // Update localStorage cache
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+
+    return merged;
+  } catch (e) {
+    console.warn('[Supabase] Snapshot fetch network error:', e);
+    return local;
+  }
+};
+
 export const hasBaselineSnapshot = (): boolean => {
   return listSnapshots().some(s => s.label === 'AI Native Upgrade Baseline');
 };
 
-export const createBaselineIfNeeded = (): void => {
+export const createBaselineIfNeeded = async (): Promise<void> => {
   if (!hasBaselineSnapshot()) {
-    createSnapshot('AI Native Upgrade Baseline');
+    await createSnapshot('AI Native Upgrade Baseline');
   }
 };

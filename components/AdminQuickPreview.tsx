@@ -167,9 +167,11 @@ const AdminQuickPreview: React.FC<Props> = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-            <span className="text-2xl">⚡</span>
-            {isCN ? '快速预览' : 'Quick Preview'}
+          <h1 className="text-2xl font-black text-gray-900 flex items-center gap-3">
+            <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-tsinghua-500 to-purple-600 text-white flex items-center justify-center">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            </span>
+            {isCN ? '预测试' : 'Pre-test'}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
             {isCN ? '一键生成模拟候选人数据，测试完整 AI 评估流程' : 'Generate mock candidate data and test the full AI pipeline'}

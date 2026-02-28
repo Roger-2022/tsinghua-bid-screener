@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Language, CandidateRecord, CalibrationReport, AnomalyFlag } from '../types';
 import { translations } from '../i18n';
 
@@ -66,6 +66,13 @@ const BatchCalibrationPanel: React.FC<Props> = ({ lang, candidates, isOpen, onCl
   const dimLabels = isCN ? DIM_LABELS_CN : DIM_LABELS_EN;
   const [report, setReport] = useState<CalibrationReport | null>(null);
 
+  // Lookup map for candidate status
+  const candidateMap = useMemo(() => {
+    const map = new Map<string, CandidateRecord>();
+    candidates.forEach(c => map.set(c.candidate_id, c));
+    return map;
+  }, [candidates]);
+
   if (!isOpen) return null;
 
   const realCandidates = candidates.filter(c => c.scores.overall !== null && (c.scores.overall || 0) > 0);
@@ -76,6 +83,72 @@ const BatchCalibrationPanel: React.FC<Props> = ({ lang, candidates, isOpen, onCl
   };
 
   const severityColor: Record<string, string> = { low: 'bg-blue-50 text-blue-700', medium: 'bg-amber-50 text-amber-700', high: 'bg-red-50 text-red-700' };
+
+  // Localize anomaly type
+  const localizeType = (type: AnomalyFlag['type']): string => {
+    const map: Record<string, { cn: string; en: string }> = {
+      decision_inconsistency: { cn: '决策不一致', en: 'Decision Inconsistency' },
+      score_outlier: { cn: '分数异常', en: 'Score Outlier' },
+      dimension_imbalance: { cn: '维度失衡', en: 'Dimension Imbalance' },
+    };
+    const entry = map[type];
+    return entry ? (isCN ? entry.cn : entry.en) : type;
+  };
+
+  // Localize anomaly description
+  const localizeDescription = (a: AnomalyFlag): string => {
+    if (a.type === 'decision_inconsistency') {
+      const scoreMatch = a.description.match(/([\d.]+)\/10/);
+      const score = scoreMatch ? scoreMatch[1] : '?';
+      if (a.description.startsWith('Rejected')) {
+        return isCN ? `拒绝但综合分 ${score}/10` : a.description;
+      }
+      return isCN ? `通过但综合分 ${score}/10` : a.description;
+    }
+    if (a.type === 'score_outlier') {
+      const match = a.description.match(/^(\w+): ([\d.]+) \(mean: ([\d.]+), std: ([\d.]+)\)/);
+      if (match) {
+        const [, dimKey, val, meanVal, stdVal] = match;
+        const dimName = dimLabels[dimKey] || dimKey;
+        return isCN
+          ? `${dimName}: ${val} (均值: ${meanVal}, 标差: ${stdVal})`
+          : `${dimName}: ${val} (mean: ${meanVal}, std: ${stdVal})`;
+      }
+    }
+    return a.description;
+  };
+
+  // Status badge for a candidate
+  const statusBadge = (candidateId: string) => {
+    const c = candidateMap.get(candidateId);
+    if (!c) return null;
+    const colors: Record<string, string> = {
+      pass: 'bg-green-100 text-green-700',
+      hold: 'bg-amber-100 text-amber-700',
+      reject: 'bg-red-100 text-red-700',
+    };
+    const labels: Record<string, { cn: string; en: string }> = {
+      pass: { cn: '通过', en: 'Pass' },
+      hold: { cn: '待定', en: 'Hold' },
+      reject: { cn: '未通过', en: 'Reject' },
+    };
+    return (
+      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${colors[c.status] || ''}`}>
+        {isCN ? labels[c.status]?.cn : labels[c.status]?.en}
+      </span>
+    );
+  };
+
+  // Group anomalies by candidate
+  const groupedAnomalies = useMemo(() => {
+    if (!report) return [];
+    const groups: Record<string, AnomalyFlag[]> = {};
+    report.anomalies.forEach(a => {
+      if (!groups[a.candidateId]) groups[a.candidateId] = [];
+      groups[a.candidateId].push(a);
+    });
+    return Object.entries(groups);
+  }, [report]);
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={onClose}>
@@ -118,18 +191,38 @@ const BatchCalibrationPanel: React.FC<Props> = ({ lang, candidates, isOpen, onCl
                     </div>
                   </div>
 
-                  {/* Anomalies */}
-                  {report.anomalies.length > 0 && (
+                  {/* Anomalies — grouped by candidate */}
+                  {groupedAnomalies.length > 0 && (
                     <div>
-                      <h3 className="text-sm font-bold text-orange-600 mb-2">{(t as any).calibration_anomaly} ({report.anomalies.length})</h3>
-                      <div className="space-y-2">
-                        {report.anomalies.map((a, i) => (
-                          <div key={i} className={`px-3 py-2 rounded-lg text-xs ${severityColor[a.severity]}`}>
-                            <span className="font-bold">{a.candidateName}</span>
-                            <span className="ml-2">{a.description}</span>
-                            <span className="ml-2 opacity-60">[{a.type}]</span>
-                          </div>
-                        ))}
+                      <h3 className="text-sm font-bold text-orange-600 mb-2">
+                        {(t as any).calibration_anomaly} ({report.anomalies.length})
+                      </h3>
+                      <div className="space-y-3">
+                        {groupedAnomalies.map(([candidateId, anomalies]) => {
+                          const displayName = anomalies[0].candidateName || candidateId;
+                          return (
+                            <div key={candidateId} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                              {/* Candidate header */}
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-sm font-black text-gray-900">{displayName}</span>
+                                {statusBadge(candidateId)}
+                                <span className="text-[10px] text-gray-400 ml-auto">
+                                  {anomalies.length} {isCN ? '项异常' : 'anomalies'}
+                                </span>
+                              </div>
+                              {/* Anomaly items */}
+                              <div className="space-y-1.5">
+                                {anomalies.map((a, i) => (
+                                  <div key={i} className={`px-3 py-2 rounded-lg text-xs ${severityColor[a.severity]}`}>
+                                    <span className="font-semibold">{localizeType(a.type)}</span>
+                                    <span className="mx-1.5 opacity-40">|</span>
+                                    <span>{localizeDescription(a)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

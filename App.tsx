@@ -732,7 +732,7 @@ const App: React.FC = () => {
     }
 
     // AI Native: Create baseline snapshot on first load
-    createBaselineIfNeeded();
+    createBaselineIfNeeded().catch(() => {});
   }, []);
 
   // Persist live interview progress to localStorage for admin real-time monitoring
@@ -1137,7 +1137,7 @@ const App: React.FC = () => {
                 { stage: AppStage.ADMIN_LIBRARY, label: t.navTalentPool },
                 { stage: AppStage.ADMIN_QUESTIONS, label: t.navQuestions },
                 { stage: AppStage.ADMIN_PROMPTS, label: t.navPrompts },
-                { stage: AppStage.ADMIN_QUICK_PREVIEW, label: (t as any).navQuickPreview || '快速预览' },
+                { stage: AppStage.ADMIN_QUICK_PREVIEW, label: (t as any).navQuickPreview || '预测试' },
               ].map(item => (
                 <button key={item.stage} onClick={() => setStage(item.stage)} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${stage === item.stage ? 'bg-white shadow-md text-tsinghua-600' : 'text-gray-400 hover:text-gray-600'}`}>
                   {item.label}

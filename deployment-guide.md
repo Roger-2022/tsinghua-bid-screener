@@ -154,6 +154,27 @@ CREATE POLICY "anon_insert"  ON candidates FOR INSERT WITH CHECK (true);
 CREATE POLICY "auth_select"  ON candidates FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "auth_update"  ON candidates FOR UPDATE USING (auth.role() = 'authenticated');
 CREATE POLICY "auth_delete"  ON candidates FOR DELETE USING (auth.role() = 'authenticated');
+
+-- ============================================
+-- 2. 建表：snapshots（系统备份快照表）
+-- ============================================
+
+CREATE TABLE snapshots (
+  id          TEXT PRIMARY KEY,              -- 快照唯一标识
+  label       TEXT NOT NULL,                 -- 备份标签
+  timestamp   BIGINT NOT NULL,              -- 创建时间戳 (ms)
+  data        JSONB NOT NULL,               -- 完整系统状态快照
+  created_at  TIMESTAMPTZ DEFAULT now()     -- 数据库记录创建时间
+);
+
+CREATE INDEX idx_snapshots_timestamp ON snapshots(timestamp DESC);
+
+ALTER TABLE snapshots ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "auth_select" ON snapshots FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "auth_insert" ON snapshots FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "auth_update" ON snapshots FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "auth_delete" ON snapshots FOR DELETE USING (auth.role() = 'authenticated');
 ```
 
 4. 点 **"Run"**（或 Ctrl+Enter / Cmd+Enter）

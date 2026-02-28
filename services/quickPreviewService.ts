@@ -1,5 +1,5 @@
 /**
- * Quick Preview Service — mock data generation for admin pipeline testing
+ * Pre-test Service — mock data generation for admin pipeline testing
  */
 import { CandidateBasicInfo, QuestionTemplate, ObjectiveResponse, OpenEndedQuestion, OpenEndedResponse, Message } from '../types';
 

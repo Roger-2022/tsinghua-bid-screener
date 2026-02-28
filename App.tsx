@@ -1081,7 +1081,8 @@ const App: React.FC = () => {
     try {
       // Use frozen config snapshot if available (protects in-progress interview from admin edits)
       const cfg = sessionConfig ?? { apiConfig, dimensionWeights, decisionThresholds, stagePrompts: promptConfig.stagePrompts };
-      const result = await generateFinalAssessment(cfg.apiConfig, history, candidateInfo!, cfg.dimensionWeights, cfg.decisionThresholds, finalResponses, cfg.stagePrompts, openEndedData);
+      const expectedTotal = adaptiveQuestionState?.totalTarget || interviewQuestions.length;
+      const result = await generateFinalAssessment(cfg.apiConfig, history, candidateInfo!, cfg.dimensionWeights, cfg.decisionThresholds, finalResponses, cfg.stagePrompts, openEndedData, expectedTotal);
       const newRecord: CandidateRecord = {
         candidate_id: Math.random().toString(36).substr(2, 9),
         display_name: candidateInfo!.name,

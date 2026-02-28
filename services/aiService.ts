@@ -131,7 +131,8 @@ const runScoreCalculation = async (
   apiConfig: ApiConfig,
   objectiveData: any[],
   weights: DimensionWeight[],
-  stagePrompts: StagePromptConfig[]
+  stagePrompts: StagePromptConfig[],
+  completionRate?: number
 ): Promise<any> => {
   const responsesText = buildResponsesText(objectiveData);
   const weightsSnippet = buildWeightsSnippet(weights);
@@ -148,7 +149,11 @@ const runScoreCalculation = async (
     .map(d => `题ID: ${d.q_id}, 维度: ${d.dimension}, 代价: ${d.probingAnswers.cost}, 假设: ${d.probingAnswers.assumption}, 证据: ${d.probingAnswers.evidence}`)
     .join('\n') || '无追问回答';
 
-  const userPrompt = `维度权重：\n${weightsSnippet}\n\n客观题回答：\n${responsesText}\n\n追问回答：\n${probingText}\n\n请严格依据系统提示词中的评分标准，输出各维度分数(0-10整数)、核心证据点和风险标记。
+  const completionNote = completionRate !== undefined && completionRate < 1
+    ? `\n\n**题目完成度：${Math.round(completionRate * 100)}%**（候选人提前结束了评估，未回答全部题目）\n- 完成度低于 50%：投入度(commitment)维度最高给 3 分，其余未充分考察的维度应酌情降分\n- 完成度 50%-80%：投入度维度最高给 5 分\n- 请在 risk_flags 中标注"候选人提前结束评估（完成${Math.round(completionRate * 100)}%）"`
+    : '';
+
+  const userPrompt = `维度权重：\n${weightsSnippet}\n\n客观题回答：\n${responsesText}\n\n追问回答：\n${probingText}${completionNote}\n\n请严格依据系统提示词中的评分标准，输出各维度分数(0-10整数)、核心证据点和风险标记。
 
 **严格评分要求**：
 - 追问回答（代价/假设/证据）是核心评分依据。如果追问回答是乱填内容（随机数字、无意义字符）、敷衍回答（如"不知道"、"没有"）或与问题完全无关，该维度最高给 2 分
@@ -440,13 +445,19 @@ export const generateFinalAssessment = async (
   thresholds: NumericDecisionThresholds,
   objectiveData: any[],
   stagePrompts: StagePromptConfig[],
-  openEndedData?: OpenEndedResponse
+  openEndedData?: OpenEndedResponse,
+  totalExpectedQuestions?: number
 ): Promise<Partial<CandidateRecord>> => {
   const responsesText = buildResponsesText(objectiveData);
 
+  // Completion rate: how many questions answered vs expected
+  const completionRate = totalExpectedQuestions && totalExpectedQuestions > 0
+    ? objectiveData.length / totalExpectedQuestions
+    : undefined;
+
   // Phase 1: Score calculation + Open-ended scoring in parallel (independent of each other)
   const [scores, openEndedScores] = await Promise.all([
-    runScoreCalculation(apiConfig, objectiveData, weights, stagePrompts),
+    runScoreCalculation(apiConfig, objectiveData, weights, stagePrompts, completionRate),
     openEndedData ? runOpenEndedScoring(apiConfig, openEndedData, info, stagePrompts) : Promise.resolve(null),
   ]);
 

@@ -109,9 +109,10 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
   const handleEditSave = () => {
     if (editRecord) {
       const s = editRecord.scores;
-      const overall = Math.round(
-        (s.motivation + s.logic + s.reflection_resilience + s.innovation + s.commitment) / 5
-      );
+      const coreDims = [s.motivation, s.logic, s.reflection_resilience, s.innovation, s.commitment];
+      const oeDims = [s.thinking_depth, s.multidimensional_thinking].filter((v): v is number => (v || 0) > 0);
+      const allDims = [...coreDims, ...oeDims];
+      const overall = Math.round((allDims.reduce((a, b) => a + b, 0) / allDims.length) * 10) / 10;
       const finalRecord: CandidateRecord = {
         ...editRecord,
         display_name: editRecord.profile.name,

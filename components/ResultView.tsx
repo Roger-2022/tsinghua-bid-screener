@@ -184,7 +184,7 @@ const ResultView: React.FC<Props> = ({ record, isAdmin = false, lang, isEditing 
                 )}
               </div>
             </div>
-            <p className="text-[10px] text-gray-400 italic text-center">{(t as any).openEndedScoreNote || '注：开放题评分不计入综合得分'}</p>
+            <p className="text-[10px] text-gray-400 italic text-center">{(t as any).openEndedScoreNote || '注：开放题评分已计入综合得分'}</p>
           </div>
         </div>
 

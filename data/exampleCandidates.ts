@@ -34,7 +34,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
       leader_willingness: true,
       self_description: '好奇、执着、系统思考',
     },
-    scores: { motivation: 9.5, logic: 9, reflection_resilience: 8.5, innovation: 8, commitment: 9, overall: 9.0, thinking_depth: 8.5, multidimensional_thinking: 9 },
+    scores: { motivation: 9.5, logic: 9, reflection_resilience: 8.5, innovation: 8, commitment: 9, overall: 8.8, thinking_depth: 8.5, multidimensional_thinking: 9 },
     evidence: {
       core_evidence_points: [
         '[真实动机] 主动放弃某头部咨询实习，声明"课程的方法论训练比实习Title更有长期价值"',
@@ -111,7 +111,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
       leader_willingness: true,
       self_description: '逻辑、创造、行动',
     },
-    scores: { motivation: 8.5, logic: 9.5, reflection_resilience: 8, innovation: 9, commitment: 8.5, overall: 8.8, thinking_depth: 9, multidimensional_thinking: 8.5 },
+    scores: { motivation: 8.5, logic: 9.5, reflection_resilience: 8, innovation: 9, commitment: 8.5, overall: 8.7, thinking_depth: 9, multidimensional_thinking: 8.5 },
     evidence: {
       core_evidence_points: [
         '[真实动机] 明确表达"想通过BID理解商业模式底层逻辑，而非单纯积累简历"',
@@ -189,7 +189,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
       leader_willingness: false,
       self_description: '踏实、分析、协作',
     },
-    scores: { motivation: 7, logic: 7.5, reflection_resilience: 6.5, innovation: 6, commitment: 7, overall: 7.0, thinking_depth: 6.5, multidimensional_thinking: 6 },
+    scores: { motivation: 7, logic: 7.5, reflection_resilience: 6.5, innovation: 6, commitment: 7, overall: 6.6, thinking_depth: 6.5, multidimensional_thinking: 6 },
     evidence: {
       core_evidence_points: [
         '[真实动机] 表达了对商业模式系统性学习的需求，认为研究生阶段需要补充实战视角',
@@ -266,7 +266,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
       leader_willingness: true,
       self_description: '热情、目标导向、善沟通',
     },
-    scores: { motivation: 8, logic: 6.5, reflection_resilience: 7, innovation: 6, commitment: 8, overall: 7.2, thinking_depth: 6, multidimensional_thinking: 7 },
+    scores: { motivation: 8, logic: 6.5, reflection_resilience: 7, innovation: 6, commitment: 8, overall: 6.9, thinking_depth: 6, multidimensional_thinking: 7 },
     evidence: {
       core_evidence_points: [
         '[真实动机] 明确说"想从执行层跳到商业模式设计层，这是我读MBA最核心的诉求"',
@@ -343,7 +343,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
       leader_willingness: false,
       self_description: '严谨、善于建模、执行力强',
     },
-    scores: { motivation: 6.5, logic: 8, reflection_resilience: 7, innovation: 5.5, commitment: 7, overall: 7.0, thinking_depth: 7.5, multidimensional_thinking: 5.5 },
+    scores: { motivation: 6.5, logic: 8, reflection_resilience: 7, innovation: 5.5, commitment: 7, overall: 6.7, thinking_depth: 7.5, multidimensional_thinking: 5.5 },
     evidence: {
       core_evidence_points: [
         '[真实动机] 动机中夹杂"对毕业前充实简历"的功利因素，但也表达了对商业问题的真实好奇',
@@ -421,7 +421,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
       leader_willingness: false,
       self_description: '创意、探索、独立思考',
     },
-    scores: { motivation: 5, logic: 5.5, reflection_resilience: 5, innovation: 7.5, commitment: 4, overall: 5.2, thinking_depth: 5, multidimensional_thinking: 7 },
+    scores: { motivation: 5, logic: 5.5, reflection_resilience: 5, innovation: 7.5, commitment: 4, overall: 5.6, thinking_depth: 5, multidimensional_thinking: 7 },
     evidence: {
       core_evidence_points: [
         '[真实动机] 动机表述偏泛——"想拓宽视野"，缺乏对BID课程特定价值的具体理解',
@@ -498,7 +498,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
       leader_willingness: true,
       self_description: '数据驱动、结果导向、善于协调',
     },
-    scores: { motivation: 4.5, logic: 7.5, reflection_resilience: 6, innovation: 5.5, commitment: 5.5, overall: 5.7, thinking_depth: 6, multidimensional_thinking: 5.5 },
+    scores: { motivation: 4.5, logic: 7.5, reflection_resilience: 6, innovation: 5.5, commitment: 5.5, overall: 5.8, thinking_depth: 6, multidimensional_thinking: 5.5 },
     evidence: {
       core_evidence_points: [
         '[真实动机] 动机中"公司报销学费"和"扩展人脉"被多次提及，内在学习驱动力存疑',
@@ -575,7 +575,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
       leader_willingness: true,
       self_description: '积极、社交达人、敢想敢干',
     },
-    scores: { motivation: 7, logic: 4.5, reflection_resilience: 5, innovation: 4.5, commitment: 6.5, overall: 5.5, thinking_depth: 4, multidimensional_thinking: 4.5 },
+    scores: { motivation: 7, logic: 4.5, reflection_resilience: 5, innovation: 4.5, commitment: 6.5, overall: 5.1, thinking_depth: 4, multidimensional_thinking: 4.5 },
     evidence: {
       core_evidence_points: [
         '[真实动机] 对BID课程充满热情，多次表达"这是我梦寐以求的学习机会"，诚意十足',
@@ -653,7 +653,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
       leader_willingness: false,
       self_description: '务实、人脉广、经验丰富',
     },
-    scores: { motivation: 2.5, logic: 3.5, reflection_resilience: 3, innovation: 2, commitment: 2, overall: 2.7, thinking_depth: 2, multidimensional_thinking: 2 },
+    scores: { motivation: 2.5, logic: 3.5, reflection_resilience: 3, innovation: 2, commitment: 2, overall: 2.4, thinking_depth: 2, multidimensional_thinking: 2 },
     evidence: {
       core_evidence_points: [
         '[真实动机] 核心动机是"想认识清华的人脉"和"公司要求管理层参加学习项目"，缺乏对课程内容的兴趣',
@@ -730,7 +730,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
       leader_willingness: false,
       self_description: '随和、喜欢尝试、佛系',
     },
-    scores: { motivation: 3, logic: 2.5, reflection_resilience: 3.5, innovation: 3, commitment: 2.5, overall: 2.9, thinking_depth: 2.5, multidimensional_thinking: 2.5 },
+    scores: { motivation: 3, logic: 2.5, reflection_resilience: 3.5, innovation: 3, commitment: 2.5, overall: 2.8, thinking_depth: 2.5, multidimensional_thinking: 2.5 },
     evidence: {
       core_evidence_points: [
         '[真实动机] 动机模糊——"看到招生帖觉得挺有意思就报了"，对课程内容和自身需求缺乏明确连接',

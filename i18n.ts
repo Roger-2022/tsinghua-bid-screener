@@ -410,7 +410,7 @@ export const translations = {
     openEndedNoAnswer: "未作答",
     openEndedScoresTitle: "开放题评分",
     noOpenEndedResponse: "无开放题回答",
-    openEndedScoreNote: "注：开放题评分不计入综合得分",
+    openEndedScoreNote: "注：开放题评分已计入综合得分",
   },
   EN: {
     title: "Business Model Workshop AI Screener",
@@ -823,6 +823,6 @@ export const translations = {
     openEndedNoAnswer: "No response",
     openEndedScoresTitle: "Open-Ended Scores",
     noOpenEndedResponse: "No open-ended response",
-    openEndedScoreNote: "Note: Open-ended scores are not included in the overall score",
+    openEndedScoreNote: "Note: Open-ended scores are included in the overall score",
   }
 };

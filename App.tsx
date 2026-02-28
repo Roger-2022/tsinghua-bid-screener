@@ -382,7 +382,7 @@ const DEFAULT_STAGE_PROMPTS: StagePromptConfig[] = [
 
 [你收到的数据]
 - 候选人基本信息（通过 {{candidate_info}} 注入）
-- 五维评分及总分（通过 {{scores}} 注入）：motivation, logic, resilience, innovation, commitment, overall
+- 各维度评分及总分（通过 {{scores}} 注入）：motivation, logic, resilience, innovation, commitment, thinking_depth, multidimensional_thinking, overall
 - 核心证据点（通过 {{evidence}} 注入）：每条包含具体的行为证据和所属维度
 - 客观题回答摘要（通过 {{responses}} 注入）
 
@@ -412,10 +412,10 @@ const DEFAULT_STAGE_PROMPTS: StagePromptConfig[] = [
 在你做出录取决策之前，该候选人已完成了完整的评估流水线：
 1. 题目生成环节：系统根据五维标准自适应生成了场景化选择题（8-20题）。
 2. 追问决策环节：系统分析作答模式后，对薄弱维度发起了深度追问。
-3. 评分计算环节：评分引擎综合客观题+追问回答，输出了五维评分（0-10）、核心证据点和风险标记。
+3. 评分计算环节：评分引擎综合客观题+追问回答，输出了各维度评分（0-10，含开放题维度）、核心证据点和风险标记。
 
 [你收到的数据]
-- 五维评分及加权均分（通过 {{scores}} 和 {{weighted_avg}} 注入）
+- 各维度评分及加权均分（通过 {{scores}} 和 {{weighted_avg}} 注入，含开放题维度）
 - 风险标记（通过 {{risk_flags}} 注入）
 - 数字阈值矩阵（通过 {{thresholds}} 注入）：包含reject/hold/pass/star四档，覆盖各维度和均分
 - 维度权重（通过 {{weights}} 注入）
@@ -487,11 +487,13 @@ const DEFAULT_QUESTIONS: QuestionTemplate[] = EXAMPLE_QUESTIONS.map(q => ({
 }));
 
 const DEFAULT_DIMENSION_WEIGHTS: DimensionWeight[] = [
-  { dimension: "真实动机", dimension_en: "Motivation", weight: 0.20 },
-  { dimension: "逻辑闭环", dimension_en: "Logic", weight: 0.25 },
-  { dimension: "反思与韧性", dimension_en: "Resilience", weight: 0.20 },
+  { dimension: "真实动机", dimension_en: "Motivation", weight: 0.15 },
+  { dimension: "逻辑闭环", dimension_en: "Logic", weight: 0.20 },
+  { dimension: "反思与韧性", dimension_en: "Resilience", weight: 0.15 },
   { dimension: "创新潜质", dimension_en: "Innovation", weight: 0.15 },
-  { dimension: "投入度", dimension_en: "Commitment", weight: 0.20 },
+  { dimension: "投入度", dimension_en: "Commitment", weight: 0.15 },
+  { dimension: "思维深度", dimension_en: "Thinking Depth", weight: 0.10 },
+  { dimension: "多维思考", dimension_en: "Multidim. Thinking", weight: 0.10 },
 ];
 
 const DEFAULT_DECISION_THRESHOLDS: NumericDecisionThresholds = {
@@ -628,7 +630,22 @@ const App: React.FC = () => {
     // Migration: old DimensionCriteria[] → DimensionWeight[]
     const savedWeights = localStorage.getItem('tsinghua_dimension_weights');
     if (savedWeights) {
-      try { setDimensionWeights(JSON.parse(savedWeights)); } catch (e) {}
+      try {
+        const parsed: DimensionWeight[] = JSON.parse(savedWeights);
+        // Migration: 5-dim → 7-dim weights (add open-ended dims)
+        if (parsed.length === 5) {
+          const scaleFactor = 0.80;
+          const migrated: DimensionWeight[] = [
+            ...parsed.map(w => ({ ...w, weight: Math.round(w.weight * scaleFactor * 100) / 100 })),
+            { dimension: '思维深度', dimension_en: 'Thinking Depth', weight: 0.10 },
+            { dimension: '多维思考', dimension_en: 'Multidim. Thinking', weight: 0.10 },
+          ];
+          setDimensionWeights(migrated);
+          localStorage.setItem('tsinghua_dimension_weights', JSON.stringify(migrated));
+        } else {
+          setDimensionWeights(parsed);
+        }
+      } catch (e) {}
     } else {
       const savedCriteria = localStorage.getItem('tsinghua_criteria');
       if (savedCriteria) {

@@ -105,7 +105,7 @@ const runCalibration = (
   // Open-ended dimensions
   processDims(OE_DIMS);
 
-  // Overall score (simple average of 5 core dims)
+  // Overall score (average of all scored dims including open-ended)
   const overallValues = candidates.map(c => c.scores.overall || 0).filter(v => v > 0);
   if (overallValues.length >= 2) {
     scoreDistributions['overall'] = {
@@ -116,13 +116,16 @@ const runCalibration = (
     };
   }
 
-  // Weighted average
+  // Weighted average (including open-ended dims when available)
   const calcWAvg = (scores: CandidateScores): number => {
-    const dimScores = DIMS.map(d => (scores as any)[d.scoreKey] || 0);
-    const dimWeights = weights.map(w => w.weight);
-    const totalWeight = dimWeights.reduce((a, b) => a + b, 0);
+    const coreDimScores = DIMS.map(d => (scores as any)[d.scoreKey] || 0);
+    const oeTD = (scores as any).thinking_depth || 0;
+    const oeMulti = (scores as any).multidimensional_thinking || 0;
+    const allScores = [...coreDimScores, ...(oeTD > 0 ? [oeTD] : []), ...(oeMulti > 0 ? [oeMulti] : [])];
+    const availableWeights = weights.slice(0, allScores.length).map(w => w.weight);
+    const totalWeight = availableWeights.reduce((a, b) => a + b, 0);
     if (totalWeight === 0) return 0;
-    return dimScores.reduce((sum, s, i) => sum + s * (dimWeights[i] || 0), 0) / totalWeight;
+    return allScores.reduce((sum, s, i) => sum + s * (availableWeights[i] || 0), 0) / totalWeight;
   };
   const wAvgValues = candidates.map(c => calcWAvg(c.scores)).filter(v => v > 0);
   if (wAvgValues.length >= 2) {
@@ -155,13 +158,16 @@ const runCalibration = (
     return { met: failures.length === 0, failures };
   };
 
-  // Calculate weighted average
+  // Calculate weighted average (including open-ended when available)
   const calcWeightedAvg = (scores: CandidateScores): number => {
-    const dimScores = DIMS.map(d => getScore(scores, d.scoreKey));
-    const dimWeights = weights.map(w => w.weight);
-    const totalWeight = dimWeights.reduce((a, b) => a + b, 0);
+    const coreDimScores = DIMS.map(d => getScore(scores, d.scoreKey));
+    const oeTD = getScore(scores, 'thinking_depth');
+    const oeMulti = getScore(scores, 'multidimensional_thinking');
+    const allScores = [...coreDimScores, ...(oeTD > 0 ? [oeTD] : []), ...(oeMulti > 0 ? [oeMulti] : [])];
+    const availableWeights = weights.slice(0, allScores.length).map(w => w.weight);
+    const totalWeight = availableWeights.reduce((a, b) => a + b, 0);
     if (totalWeight === 0) return 0;
-    return dimScores.reduce((sum, s, i) => sum + s * (dimWeights[i] || 0), 0) / totalWeight;
+    return allScores.reduce((sum, s, i) => sum + s * (availableWeights[i] || 0), 0) / totalWeight;
   };
 
   // Build a human-readable check string
@@ -440,7 +446,7 @@ const BatchCalibrationPanel: React.FC<Props> = ({ lang, candidates, isOpen, onCl
                     {/* Open-ended dims */}
                     {OE_DIMS.some(dim => report.scoreDistributions[dim.scoreKey]) && (
                       <div className="space-y-3 mt-4 pt-3 border-t border-gray-200">
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">{isCN ? '开放题（不计入总分，但参与录取阈值判定）' : 'Open-Ended (not in total score, but checked against thresholds)'}</p>
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">{isCN ? '开放题（计入总分和加权均分）' : 'Open-Ended (included in overall & weighted avg)'}</p>
                         {OE_DIMS.map(dim => {
                           const dist = report.scoreDistributions[dim.scoreKey];
                           if (!dist) return null;

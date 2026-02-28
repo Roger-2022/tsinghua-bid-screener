@@ -15,6 +15,8 @@ const DIMENSION_MAP = [
   { zh: '反思与韧性', en: 'Resilience', scoreKey: 'reflection_resilience', thresholdKey: 'resilience', exportKey: 's_resilience' },
   { zh: '创新潜质', en: 'Innovation', scoreKey: 'innovation', thresholdKey: 'innovation', exportKey: 's_innovation' },
   { zh: '投入度', en: 'Commitment', scoreKey: 'commitment', thresholdKey: 'commitment', exportKey: 's_commitment' },
+  { zh: '思维深度', en: 'Thinking Depth', scoreKey: 'thinking_depth', thresholdKey: 'thinking_depth', exportKey: 's_thinking_depth' },
+  { zh: '多维思考', en: 'Multidim. Thinking', scoreKey: 'multidimensional_thinking', thresholdKey: 'multidimensional_thinking', exportKey: 's_multidim_thinking' },
 ];
 
 const AdminCriteria: React.FC<Props> = ({ dimensionWeights, onUpdate, lang }) => {

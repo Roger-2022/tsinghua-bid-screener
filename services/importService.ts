@@ -283,11 +283,12 @@ const mapRowToRecord = (row: any, index: number, errors: string[]): CandidateRec
       timestamp: row.timestamp ? new Date(row.timestamp).getTime() || Date.now() : Date.now(),
     };
 
-    // Calculate overall score
+    // Calculate overall score (include open-ended dims when available)
     const s = record.scores;
-    record.scores.overall = Math.round(
-      (s.motivation + s.logic + s.reflection_resilience + s.innovation + s.commitment) / 5
-    );
+    const coreDims = [s.motivation, s.logic, s.reflection_resilience, s.innovation, s.commitment];
+    const oeDims = [s.thinking_depth, s.multidimensional_thinking].filter((v): v is number => (v || 0) > 0);
+    const allDims = [...coreDims, ...oeDims];
+    record.scores.overall = Math.round((allDims.reduce((a, b) => a + b, 0) / allDims.length) * 10) / 10;
 
     // Import open-ended data if present and not "无"
     const oeQuestion = cleanValue(row.open_ended_question);

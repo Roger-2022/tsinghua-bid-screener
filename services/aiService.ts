@@ -179,7 +179,8 @@ const runProfileGeneration = async (
   scores: any,
   info: any,
   objectiveData: any[],
-  stagePrompts: StagePromptConfig[]
+  stagePrompts: StagePromptConfig[],
+  openEndedScores?: { thinking_depth: number; multidimensional_thinking: number } | null,
 ): Promise<any> => {
   const responsesText = buildResponsesText(objectiveData);
   const profileStage = stagePrompts.find(s => s.stage === 'profile_generation');
@@ -197,7 +198,7 @@ const runProfileGeneration = async (
 过往项目: ${info.projects}
 
 ### 评分结果
-动机: ${scores.motivation}, 逻辑: ${scores.logic}, 反思韧性: ${scores.resilience}, 创新: ${scores.innovation}, 投入: ${scores.commitment}
+动机: ${scores.motivation}, 逻辑: ${scores.logic}, 反思韧性: ${scores.resilience}, 创新: ${scores.innovation}, 投入: ${scores.commitment}${openEndedScores ? `, 思维深度: ${openEndedScores.thinking_depth}, 多维思考: ${openEndedScores.multidimensional_thinking}` : ''}
 
 ### 核心证据
 ${scores.evidence_objects.map((e: any) => `[${e.dimension}] ${e.point}`).join('\n')}
@@ -242,9 +243,17 @@ const runDecisionMaking = async (
 ): Promise<any> => {
   const decisionStage = stagePrompts.find(s => s.stage === 'decision_making');
 
-  const dimScores = [scores.motivation, scores.logic, scores.resilience, scores.innovation, scores.commitment];
-  const dimWeights = weights.map(w => w.weight);
-  const weightedAvg = dimScores.reduce((sum: number, s: number, i: number) => sum + s * dimWeights[i], 0) / dimWeights.reduce((a: number, b: number) => a + b, 0);
+  // Include open-ended scores in weighted avg when available
+  const coreDimScores = [scores.motivation, scores.logic, scores.resilience, scores.innovation, scores.commitment];
+  const oeTD = openEndedScores?.thinking_depth || 0;
+  const oeMulti = openEndedScores?.multidimensional_thinking || 0;
+  const allDimScores = [...coreDimScores, ...(oeTD > 0 ? [oeTD] : []), ...(oeMulti > 0 ? [oeMulti] : [])];
+  // Match weights to the number of available dimensions
+  const availableWeights = weights.slice(0, allDimScores.length).map(w => w.weight);
+  const totalWeight = availableWeights.reduce((a: number, b: number) => a + b, 0);
+  const weightedAvg = totalWeight > 0
+    ? allDimScores.reduce((sum: number, s: number, i: number) => sum + s * (availableWeights[i] || 0), 0) / totalWeight
+    : 0;
 
   const rawDecisionPrompt = decisionStage?.system_prompt || '你是决策引擎。';
   const runtimeCtx = buildRuntimeInheritedContext('decision_making', decisionStage, { scores });
@@ -253,13 +262,13 @@ const runDecisionMaking = async (
     : rawDecisionPrompt;
 
   const openEndedBlock = openEndedScores
-    ? `\n开放题评分（思维深度与多维思考）：\n思维深度（开放题）: ${openEndedScores.thinking_depth}, 多维思考（开放题）: ${openEndedScores.multidimensional_thinking}\n`
+    ? `, 思维深度: ${openEndedScores.thinking_depth}, 多维思考: ${openEndedScores.multidimensional_thinking}`
     : '';
 
   const userPrompt = `候选人分数：
-动机: ${scores.motivation}, 逻辑: ${scores.logic}, 反思韧性: ${scores.resilience}, 创新: ${scores.innovation}, 投入: ${scores.commitment}
-${openEndedBlock}
-加权均分：${weightedAvg.toFixed(2)}
+动机: ${scores.motivation}, 逻辑: ${scores.logic}, 反思韧性: ${scores.resilience}, 创新: ${scores.innovation}, 投入: ${scores.commitment}${openEndedBlock}
+
+加权均分（含开放题）：${weightedAvg.toFixed(2)}
 
 风险标记：${scores.risk_flags.join('; ') || '无'}
 
@@ -296,7 +305,8 @@ const runExplainability = async (
   apiConfig: ApiConfig,
   scores: any,
   info: any,
-  stagePrompts: StagePromptConfig[]
+  stagePrompts: StagePromptConfig[],
+  openEndedScores?: { thinking_depth: number; multidimensional_thinking: number } | null,
 ): Promise<CandidateExplainability> => {
   // Use profile_generation stage config for model/temperature (explainability is a sub-step)
   const profileStage = stagePrompts.find(s => s.stage === 'profile_generation');
@@ -310,7 +320,7 @@ const runExplainability = async (
 - 发展建议给出可执行的1-2周内行动`;
 
   const userPrompt = `候选人：${info.name}，身份：${info.identity}
-评分：动机${scores.motivation}, 逻辑${scores.logic}, 韧性${scores.resilience}, 创新${scores.innovation}, 投入${scores.commitment}
+评分：动机${scores.motivation}, 逻辑${scores.logic}, 韧性${scores.resilience}, 创新${scores.innovation}, 投入${scores.commitment}${openEndedScores ? `, 思维深度${openEndedScores.thinking_depth}, 多维思考${openEndedScores.multidimensional_thinking}` : ''}
 核心证据：${scores.evidence_objects?.map((e: any) => e.point).join('; ') || '无'}
 风险标记：${scores.risk_flags?.join('; ') || '无'}
 
@@ -423,10 +433,12 @@ export const generateFinalAssessment = async (
 
   // Phase 2: Profile + Decision (with open-ended scores) + Explainability in parallel
   const [profile, decision, explainability] = await Promise.all([
-    runProfileGeneration(apiConfig, scores, info, objectiveData, stagePrompts),
+    runProfileGeneration(apiConfig, scores, info, objectiveData, stagePrompts,
+      openEndedScores ? { thinking_depth: openEndedScores.thinking_depth, multidimensional_thinking: openEndedScores.multidimensional_thinking } : null),
     runDecisionMaking(apiConfig, scores, thresholds, weights, info, stagePrompts,
       openEndedScores ? { thinking_depth: openEndedScores.thinking_depth, multidimensional_thinking: openEndedScores.multidimensional_thinking } : undefined),
-    runExplainability(apiConfig, scores, info, stagePrompts),
+    runExplainability(apiConfig, scores, info, stagePrompts,
+      openEndedScores ? { thinking_depth: openEndedScores.thinking_depth, multidimensional_thinking: openEndedScores.multidimensional_thinking } : null),
   ]);
 
   const statusMap: Record<string, string> = { pass: '通过', hold: '待定', reject: '拒绝' };
@@ -442,8 +454,13 @@ export const generateFinalAssessment = async (
       commitment: scores.commitment,
       thinking_depth: openEndedScores?.thinking_depth || 0,
       multidimensional_thinking: openEndedScores?.multidimensional_thinking || 0,
-      // overall remains average of original 5 dimensions only — new dimensions are supplementary
-      overall: Math.round((scores.motivation + scores.logic + scores.resilience + scores.innovation + scores.commitment) / 5)
+      // overall = average of all scored dimensions (core + open-ended when available)
+      overall: (() => {
+        const core = [scores.motivation, scores.logic, scores.resilience, scores.innovation, scores.commitment];
+        const oe = [openEndedScores?.thinking_depth, openEndedScores?.multidimensional_thinking].filter((v): v is number => (v || 0) > 0);
+        const all = [...core, ...oe];
+        return Math.round((all.reduce((a, b) => a + b, 0) / all.length) * 10) / 10;
+      })()
     },
     evidence: {
       core_evidence_points: [

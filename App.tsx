@@ -25,6 +25,7 @@ import ApiSettings from './components/ApiSettings';
 import AdminQuickPreview from './components/AdminQuickPreview';
 import { signOut, getSession, onAuthStateChange, AuthUser } from './services/authService';
 import { insertCandidate, fetchCandidates, upsertCandidates } from './services/candidateService';
+import { fetchApiConfig, saveApiConfig } from './services/settingsService';
 
 const DEFAULT_PROMPT_TEMPLATE = `一、角色定位
 你是 BID 商业模式工坊的招生筛选官。你的任务是生成高质量的筛选问题，用于评估申请者是否具备参与高强度商业模式训练的潜质。
@@ -556,6 +557,8 @@ const App: React.FC = () => {
   });
   const [selectedOpenEndedQuestion, setSelectedOpenEndedQuestion] = useState<OpenEndedQuestion | null>(null);
   const [openEndedResponse, setOpenEndedResponse] = useState<OpenEndedResponse | null>(null);
+  // Interview suspend/resume — tracks session when user navigates away mid-interview
+  const [suspendedSession, setSuspendedSession] = useState<InterviewSession | null>(null);
 
   // Merge example candidates (read-only) with real candidates for display
   const allCandidates = useMemo(() => [...EXAMPLE_CANDIDATES, ...candidates], [candidates]);
@@ -609,6 +612,16 @@ const App: React.FC = () => {
       fetchCandidates().then(records => setCandidates(records));
     }
   }, [authUser]);
+
+  // Load API config from Supabase on startup (cloud settings override localStorage)
+  useEffect(() => {
+    fetchApiConfig().then(cloudConfig => {
+      if (cloudConfig && cloudConfig.apiKey) {
+        setApiConfig(cloudConfig);
+        localStorage.setItem('tsinghua_api_config', JSON.stringify(cloudConfig));
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const savedCandidates = localStorage.getItem('tsinghua_candidates');
@@ -768,9 +781,10 @@ const App: React.FC = () => {
     }
   }, [stage, objectiveResponses.length, isProbing, currentQIndex]);
 
-  // Persist recoverable interview session to localStorage
+  // Persist recoverable interview session to localStorage (covers both questionnaire and open-ended stages)
   useEffect(() => {
-    if (stage === AppStage.INTERVIEW_QUESTIONNAIRE && candidateInfo && interviewQuestions.length > 0) {
+    const isInterviewActive = (stage === AppStage.INTERVIEW_QUESTIONNAIRE || stage === AppStage.OPEN_ENDED_ANALYSIS) && candidateInfo && interviewQuestions.length > 0;
+    if (isInterviewActive) {
       const session: InterviewSession = {
         candidateInfo,
         objectiveResponses,
@@ -784,10 +798,11 @@ const App: React.FC = () => {
         openEndedResponse: openEndedResponse || undefined,
         selectedOpenEndedQuestion: selectedOpenEndedQuestion || undefined,
         sessionConfig: sessionConfig || undefined,
+        suspendedStage: stage,
       };
       localStorage.setItem('tsinghua_interview_session', JSON.stringify(session));
     }
-  }, [stage, objectiveResponses, currentQIndex, isProbing, messages, candidateInfo, interviewQuestions]);
+  }, [stage, objectiveResponses, currentQIndex, isProbing, messages, candidateInfo, interviewQuestions, openEndedResponse]);
 
   const handleStartForm = () => setStage(AppStage.BASIC_FORM);
 
@@ -805,7 +820,7 @@ const App: React.FC = () => {
     if (pendingRecovery.openEndedResponse) setOpenEndedResponse(pendingRecovery.openEndedResponse);
     if (pendingRecovery.selectedOpenEndedQuestion) setSelectedOpenEndedQuestion(pendingRecovery.selectedOpenEndedQuestion);
     if (pendingRecovery.sessionConfig) setSessionConfig(pendingRecovery.sessionConfig);
-    setStage(AppStage.INTERVIEW_QUESTIONNAIRE);
+    setStage(pendingRecovery.suspendedStage || AppStage.INTERVIEW_QUESTIONNAIRE);
     setPendingRecovery(null);
   };
 
@@ -815,9 +830,61 @@ const App: React.FC = () => {
     setSessionConfig(null);
   };
 
+  // Navigate away from an active interview — snapshot session so user can return
+  const handleNavigateAway = (targetStage: AppStage) => {
+    const isActive = stage === AppStage.INTERVIEW_QUESTIONNAIRE || stage === AppStage.OPEN_ENDED_ANALYSIS;
+    if (isActive && candidateInfo) {
+      const session: InterviewSession = {
+        candidateInfo,
+        objectiveResponses,
+        currentQIndex,
+        isProbing,
+        messages,
+        interviewQuestions,
+        savedAt: Date.now(),
+        adaptiveState: adaptiveQuestionState || undefined,
+        liveCandidateProfile: liveCandidateProfile || undefined,
+        openEndedResponse: openEndedResponse || undefined,
+        selectedOpenEndedQuestion: selectedOpenEndedQuestion || undefined,
+        sessionConfig: sessionConfig || undefined,
+        suspendedStage: stage,
+      };
+      setSuspendedSession(session);
+      localStorage.setItem('tsinghua_interview_session', JSON.stringify(session));
+    }
+    setStage(targetStage);
+  };
+
+  // Resume a suspended interview session
+  const handleResumeSession = () => {
+    if (!suspendedSession) return;
+    setCandidateInfo(suspendedSession.candidateInfo);
+    setInterviewQuestions(suspendedSession.interviewQuestions);
+    setObjectiveResponses(suspendedSession.objectiveResponses);
+    setCurrentQIndex(suspendedSession.currentQIndex);
+    setIsProbing(suspendedSession.isProbing);
+    setMessages(suspendedSession.messages);
+    if (suspendedSession.adaptiveState) setAdaptiveQuestionState(suspendedSession.adaptiveState);
+    if (suspendedSession.liveCandidateProfile) setLiveCandidateProfile(suspendedSession.liveCandidateProfile);
+    if (suspendedSession.openEndedResponse) setOpenEndedResponse(suspendedSession.openEndedResponse);
+    if (suspendedSession.selectedOpenEndedQuestion) setSelectedOpenEndedQuestion(suspendedSession.selectedOpenEndedQuestion);
+    if (suspendedSession.sessionConfig) setSessionConfig(suspendedSession.sessionConfig);
+    setStage(suspendedSession.suspendedStage || AppStage.INTERVIEW_QUESTIONNAIRE);
+    setSuspendedSession(null);
+  };
+
+  // Abandon a suspended interview session
+  const handleAbandonSession = () => {
+    if (!confirm((t as any).abandonConfirm)) return;
+    localStorage.removeItem('tsinghua_interview_session');
+    setSuspendedSession(null);
+    setSessionConfig(null);
+  };
+
   const handleFormSubmit = (info: CandidateBasicInfo) => {
     localStorage.removeItem('tsinghua_interview_session');
     setPendingRecovery(null);
+    setSuspendedSession(null);
     setCandidateInfo(info);
 
     // Freeze config snapshot — admin edits after this point won't affect this interview
@@ -1098,14 +1165,14 @@ const App: React.FC = () => {
   const handleUpdateProbingStrategy = (s: ProbingStrategyConfig) => { setProbingStrategy(s); localStorage.setItem('tsinghua_probing_strategy', JSON.stringify(s)); };
   const handleUpdateWorkflowModules = (m: WorkflowModuleConfig[]) => { setWorkflowModules(m); localStorage.setItem('tsinghua_workflow_modules', JSON.stringify(m)); };
   const handleUpdateQuestionCountConfig = (cfg: QuestionCountConfig) => { setQuestionCountConfig(cfg); localStorage.setItem('tsinghua_question_count_config', JSON.stringify(cfg)); };
-  const handleUpdateApiConfig = (cfg: ApiConfig) => { setApiConfig(cfg); localStorage.setItem('tsinghua_api_config', JSON.stringify(cfg)); };
+  const handleUpdateApiConfig = (cfg: ApiConfig) => { setApiConfig(cfg); localStorage.setItem('tsinghua_api_config', JSON.stringify(cfg)); saveApiConfig(cfg); };
   const handleQuickPreviewCandidateCreated = (record: CandidateRecord) => { const updated = [...candidates, record]; setCandidates(updated); insertCandidate(record); };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-tsinghua-50/30 text-gray-900 font-sans">
       {/* Header */}
       <div className="bg-white/95 border-b border-gray-100 py-3 px-6 flex justify-between items-center sticky top-0 z-50 shadow-sm backdrop-blur-xl">
-        <button onClick={() => setStage(AppStage.WELCOME)} className="flex items-center gap-3 group">
+        <button onClick={() => handleNavigateAway(AppStage.WELCOME)} className="flex items-center gap-3 group">
           <div className="bg-gradient-to-br from-tsinghua-500 to-tsinghua-700 w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-lg shadow-tsinghua-200/50 group-hover:scale-110 transition-transform">BM</div>
           <div className="hidden sm:block">
             <span className="font-black text-gray-800 tracking-tight text-sm">{t.title}</span>
@@ -1140,17 +1207,28 @@ const App: React.FC = () => {
             </div>
           )}
           {isAuthenticated && (
-            <div className="flex bg-gray-50 rounded-xl p-1 shadow-inner border border-gray-100">
-              {[
-                { stage: AppStage.ADMIN_LIBRARY, label: t.navTalentPool },
-                { stage: AppStage.ADMIN_QUESTIONS, label: t.navQuestions },
-                { stage: AppStage.ADMIN_PROMPTS, label: t.navPrompts },
-                { stage: AppStage.ADMIN_QUICK_PREVIEW, label: (t as any).navQuickPreview || '预测试' },
-              ].map(item => (
-                <button key={item.stage} onClick={() => setStage(item.stage)} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${stage === item.stage ? 'bg-white shadow-md text-tsinghua-600' : 'text-gray-400 hover:text-gray-600'}`}>
-                  {item.label}
-                </button>
-              ))}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => handleNavigateAway(AppStage.WELCOME)}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-tsinghua-600 hover:bg-tsinghua-50 transition-all flex items-center gap-1.5"
+                title={lang === 'CN' ? '返回主页' : 'Back to Home'}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                <span className="hidden md:inline">{t.backHome}</span>
+              </button>
+              <div className="w-px h-5 bg-gray-200 mx-1" />
+              <div className="flex bg-gray-50 rounded-xl p-1 shadow-inner border border-gray-100">
+                {[
+                  { stage: AppStage.ADMIN_LIBRARY, label: t.navTalentPool },
+                  { stage: AppStage.ADMIN_QUESTIONS, label: t.navQuestions },
+                  { stage: AppStage.ADMIN_PROMPTS, label: t.navPrompts },
+                  { stage: AppStage.ADMIN_QUICK_PREVIEW, label: (t as any).navQuickPreview || '预测试' },
+                ].map(item => (
+                  <button key={item.stage} onClick={() => handleNavigateAway(item.stage)} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${stage === item.stage ? 'bg-white shadow-md text-tsinghua-600' : 'text-gray-400 hover:text-gray-600'}`}>
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {/* AI Native: Backup Button (admin only) */}
@@ -1187,12 +1265,50 @@ const App: React.FC = () => {
             {lang === 'CN' ? 'EN' : '中'}
           </button>
           {!isAuthenticated && (
-            <button onClick={() => setStage(AppStage.ADMIN_LOGIN)} className="text-xs font-bold text-gray-400 hover:text-tsinghua-500 transition-colors">
+            <button onClick={() => handleNavigateAway(AppStage.ADMIN_LOGIN)} className="text-xs font-bold text-gray-400 hover:text-tsinghua-500 transition-colors">
               {t.adminAccess}
             </button>
           )}
         </div>
       </div>
+
+      {/* Suspended Interview Banner — shows on ALL non-interview screens (including admin pages) */}
+      {suspendedSession && stage !== AppStage.INTERVIEW_QUESTIONNAIRE && stage !== AppStage.OPEN_ENDED_ANALYSIS && stage !== AppStage.ANALYZING && (
+        <div className="fixed bottom-0 left-0 right-0 z-[60] bg-gradient-to-r from-amber-500 to-orange-500 shadow-2xl shadow-amber-900/30">
+          <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className="text-white font-black text-sm tracking-tight">{(t as any).interviewSuspended}</p>
+                <p className="text-white/80 text-xs truncate">
+                  {((t as any).interviewSuspendedDetail as string)
+                    .replace('{name}', suspendedSession.candidateInfo.name)
+                    .replace('{answered}', String(suspendedSession.objectiveResponses.length))
+                    .replace('{total}', String(suspendedSession.interviewQuestions.length))}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={handleAbandonSession}
+                className="px-4 py-2 text-xs font-bold text-white/90 border border-white/40 rounded-xl hover:bg-white/10 transition-all"
+              >
+                {(t as any).abandonInterview}
+              </button>
+              <button
+                onClick={handleResumeSession}
+                className="px-5 py-2 text-xs font-black bg-white text-amber-600 rounded-xl hover:bg-amber-50 transition-all shadow-lg"
+              >
+                {(t as any).resumeInterview}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Session Recovery Dialog */}
       {pendingRecovery && (

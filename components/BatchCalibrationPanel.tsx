@@ -73,6 +73,17 @@ const BatchCalibrationPanel: React.FC<Props> = ({ lang, candidates, isOpen, onCl
     return map;
   }, [candidates]);
 
+  // Group anomalies by candidate (must be before early return to satisfy React Hooks rules)
+  const groupedAnomalies = useMemo(() => {
+    if (!report) return [];
+    const groups: Record<string, AnomalyFlag[]> = {};
+    report.anomalies.forEach(a => {
+      if (!groups[a.candidateId]) groups[a.candidateId] = [];
+      groups[a.candidateId].push(a);
+    });
+    return Object.entries(groups);
+  }, [report]);
+
   if (!isOpen) return null;
 
   const realCandidates = candidates.filter(c => c.scores.overall !== null && (c.scores.overall || 0) > 0);
@@ -138,17 +149,6 @@ const BatchCalibrationPanel: React.FC<Props> = ({ lang, candidates, isOpen, onCl
       </span>
     );
   };
-
-  // Group anomalies by candidate
-  const groupedAnomalies = useMemo(() => {
-    if (!report) return [];
-    const groups: Record<string, AnomalyFlag[]> = {};
-    report.anomalies.forEach(a => {
-      if (!groups[a.candidateId]) groups[a.candidateId] = [];
-      groups[a.candidateId].push(a);
-    });
-    return Object.entries(groups);
-  }, [report]);
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={onClose}>

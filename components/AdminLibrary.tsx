@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { CandidateRecord, Language, CandidateProfile, ImportSummary, FeedbackRecord } from '../types';
+import { CandidateRecord, Language, CandidateProfile, ImportSummary, FeedbackRecord, NumericDecisionThresholds, DimensionWeight } from '../types';
 import ResultView from './ResultView';
 import { exportToCSV } from '../services/exportService';
 import { translations } from '../i18n';
@@ -26,9 +26,11 @@ interface Props {
   candidates: CandidateRecord[];
   lang: Language;
   onUpdate: (newList: CandidateRecord[]) => void;
+  decisionThresholds: NumericDecisionThresholds;
+  dimensionWeights: DimensionWeight[];
 }
 
-const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate }) => {
+const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThresholds, dimensionWeights }) => {
   const t = translations[lang];
   const isCN = lang === 'CN';
 
@@ -922,6 +924,8 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate }) => {
         candidates={candidates}
         isOpen={showCalibration}
         onClose={() => setShowCalibration(false)}
+        decisionThresholds={decisionThresholds}
+        dimensionWeights={dimensionWeights}
       />
     </div>
   );

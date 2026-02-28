@@ -1293,7 +1293,7 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
-        {stage === AppStage.ADMIN_LIBRARY && <AdminLibrary candidates={allCandidates} lang={lang} onUpdate={updateCandidates} />}
+        {stage === AppStage.ADMIN_LIBRARY && <AdminLibrary candidates={allCandidates} lang={lang} onUpdate={updateCandidates} decisionThresholds={decisionThresholds} dimensionWeights={dimensionWeights} />}
         {/* ADMIN_CRITERIA removed — weights moved to AdminPrompts */}
         {stage === AppStage.ADMIN_QUESTIONS && <AdminQuestions questions={allQuestions} dimensionWeights={dimensionWeights} onUpdate={handleUpdateQuestions} lang={lang} promptConfig={promptConfig} onUpdatePrompt={handleUpdatePrompt} decisionThresholds={decisionThresholds} apiConfig={apiConfig} probingStrategy={probingStrategy} onUpdateProbingStrategy={handleUpdateProbingStrategy} />}
         {stage === AppStage.ADMIN_PROMPTS && <AdminPrompts promptConfig={promptConfig} onUpdate={handleUpdatePrompt} dimensionWeights={dimensionWeights} onUpdateWeights={handleUpdateWeights} decisionThresholds={decisionThresholds} onUpdateThresholds={handleUpdateThresholds} lang={lang} decisionTree={decisionTree} onUpdateDecisionTree={handleUpdateDecisionTree} probingStrategy={probingStrategy} workflowModules={workflowModules} onUpdateWorkflowModules={handleUpdateWorkflowModules} apiConfig={apiConfig} questionCountConfig={questionCountConfig} onUpdateQuestionCountConfig={handleUpdateQuestionCountConfig} />}

@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Language, CandidateRecord, CalibrationReport, AnomalyFlag } from '../types';
+import { Language, CandidateRecord, CandidateScores, CalibrationReport, AnomalyFlag, NumericDecisionThresholds, DecisionThresholdRow, DimensionWeight } from '../types';
 import { translations } from '../i18n';
 
 interface Props {
@@ -8,62 +8,220 @@ interface Props {
   candidates: CandidateRecord[];
   isOpen: boolean;
   onClose: () => void;
+  decisionThresholds: NumericDecisionThresholds;
+  dimensionWeights: DimensionWeight[];
 }
 
-const DIM_KEYS = ['motivation', 'logic', 'reflection_resilience', 'innovation', 'commitment'] as const;
-const DIM_LABELS_CN: Record<string, string> = { motivation: '动机', logic: '逻辑', reflection_resilience: '韧性', innovation: '创新', commitment: '投入' };
-const DIM_LABELS_EN: Record<string, string> = { motivation: 'Motivation', logic: 'Logic', reflection_resilience: 'Resilience', innovation: 'Innovation', commitment: 'Commitment' };
+// Dimension key mapping: score field → threshold field → labels
+const DIMS = [
+  { scoreKey: 'motivation', thresholdKey: 'motivation', cn: '动机', en: 'Motivation' },
+  { scoreKey: 'logic', thresholdKey: 'logic', cn: '逻辑', en: 'Logic' },
+  { scoreKey: 'reflection_resilience', thresholdKey: 'resilience', cn: '韧性', en: 'Resilience' },
+  { scoreKey: 'innovation', thresholdKey: 'innovation', cn: '创新', en: 'Innovation' },
+  { scoreKey: 'commitment', thresholdKey: 'commitment', cn: '投入', en: 'Commitment' },
+] as const;
 
+const OE_DIMS = [
+  { scoreKey: 'thinking_depth', thresholdKey: 'thinking_depth', cn: '思维深度', en: 'Thinking Depth' },
+  { scoreKey: 'multidimensional_thinking', thresholdKey: 'multidimensional_thinking', cn: '多维思考', en: 'Multidim. Thinking' },
+] as const;
+
+// ---- Statistics helpers ----
 const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
 const std = (arr: number[]) => {
   const m = mean(arr);
   return Math.sqrt(arr.reduce((s, v) => s + Math.pow(v - m, 2), 0) / arr.length);
 };
 
-const runLocalCalibration = (candidates: CandidateRecord[]): CalibrationReport => {
+const quartiles = (values: number[]) => {
+  const sorted = [...values].sort((a, b) => a - b);
+  const q = (p: number) => {
+    const idx = p * (sorted.length - 1);
+    const lo = Math.floor(idx), hi = Math.ceil(idx);
+    return lo === hi ? sorted[lo] : sorted[lo] * (hi - idx) + sorted[hi] * (idx - lo);
+  };
+  return { q1: q(0.25), median: q(0.5), q3: q(0.75) };
+};
+
+// ---- Calibration engine ----
+const runCalibration = (
+  candidates: CandidateRecord[],
+  thresholds: NumericDecisionThresholds,
+  weights: DimensionWeight[],
+  isCN: boolean,
+): CalibrationReport => {
   const scoreDistributions: CalibrationReport['scoreDistributions'] = {};
   const anomalies: AnomalyFlag[] = [];
 
-  DIM_KEYS.forEach(dim => {
-    const values = candidates.map(c => (c.scores as any)[dim] || 0).filter(v => v > 0);
+  // ---- 1. Score distribution + IQR outlier detection ----
+  DIMS.forEach(dim => {
+    const values = candidates.map(c => (c.scores as any)[dim.scoreKey] || 0).filter(v => v > 0);
     if (values.length < 2) return;
     const m = mean(values);
     const s = std(values);
-    scoreDistributions[dim] = { mean: +m.toFixed(2), std: +s.toFixed(2), min: Math.min(...values), max: Math.max(...values) };
+    scoreDistributions[dim.scoreKey] = { mean: +m.toFixed(2), std: +s.toFixed(2), min: Math.min(...values), max: Math.max(...values) };
 
-    // Detect outliers (>2 std from mean)
+    // IQR outlier detection
+    const { q1, q3 } = quartiles(values);
+    const iqr = q3 - q1;
+    const lowerMild = q1 - 1.5 * iqr;
+    const upperMild = q3 + 1.5 * iqr;
+    const lowerExtreme = q1 - 3 * iqr;
+    const upperExtreme = q3 + 3 * iqr;
+
     candidates.forEach(c => {
-      const val = (c.scores as any)[dim] || 0;
-      if (val > 0 && Math.abs(val - m) > 2 * s) {
+      const val = (c.scores as any)[dim.scoreKey] || 0;
+      if (val <= 0) return;
+      const dimLabel = isCN ? dim.cn : dim.en;
+      if (val < lowerExtreme || val > upperExtreme) {
         anomalies.push({
           candidateId: c.candidate_id,
           candidateName: c.display_name,
           type: 'score_outlier',
-          description: `${dim}: ${val} (mean: ${m.toFixed(1)}, std: ${s.toFixed(1)})`,
-          severity: Math.abs(val - m) > 3 * s ? 'high' : 'medium',
+          description: isCN
+            ? `${dimLabel}: ${val} (Q1=${q1.toFixed(1)} Q3=${q3.toFixed(1)} IQR=${iqr.toFixed(1)})`
+            : `${dimLabel}: ${val} (Q1=${q1.toFixed(1)} Q3=${q3.toFixed(1)} IQR=${iqr.toFixed(1)})`,
+          severity: 'high',
+        });
+      } else if (val < lowerMild || val > upperMild) {
+        anomalies.push({
+          candidateId: c.candidate_id,
+          candidateName: c.display_name,
+          type: 'score_outlier',
+          description: isCN
+            ? `${dimLabel}: ${val} (Q1=${q1.toFixed(1)} Q3=${q3.toFixed(1)} IQR=${iqr.toFixed(1)})`
+            : `${dimLabel}: ${val} (Q1=${q1.toFixed(1)} Q3=${q3.toFixed(1)} IQR=${iqr.toFixed(1)})`,
+          severity: 'medium',
         });
       }
     });
   });
 
-  // Detect decision inconsistency (high score but reject, or low score but pass)
-  candidates.forEach(c => {
-    const overall = c.scores.overall || 0;
-    if (c.status === 'reject' && overall >= 7) {
-      anomalies.push({ candidateId: c.candidate_id, candidateName: c.display_name, type: 'decision_inconsistency', description: `Rejected with overall ${overall}/10`, severity: 'high' });
+  // ---- 2. Decision inconsistency — based on actual admission thresholds ----
+  const getScore = (scores: CandidateScores, key: string): number => (scores as any)[key] || 0;
+  const getThreshold = (row: DecisionThresholdRow, key: string): number => (row as any)[key] || 0;
+
+  // Check if all core dimensions meet a given threshold level
+  const meetsAllDims = (scores: CandidateScores, level: DecisionThresholdRow): { met: boolean; failures: string[] } => {
+    const failures: string[] = [];
+    for (const dim of DIMS) {
+      const val = getScore(scores, dim.scoreKey);
+      const thresh = getThreshold(level, dim.thresholdKey);
+      if (val < thresh) failures.push(isCN ? dim.cn : dim.en);
     }
-    if (c.status === 'pass' && overall <= 3) {
-      anomalies.push({ candidateId: c.candidate_id, candidateName: c.display_name, type: 'decision_inconsistency', description: `Passed with overall ${overall}/10`, severity: 'high' });
+    // Optional: open-ended dims
+    for (const dim of OE_DIMS) {
+      const val = getScore(scores, dim.scoreKey);
+      const thresh = getThreshold(level, dim.thresholdKey);
+      if (val > 0 && thresh > 0 && val < thresh) failures.push(isCN ? dim.cn : dim.en);
+    }
+    return { met: failures.length === 0, failures };
+  };
+
+  // Calculate weighted average
+  const calcWeightedAvg = (scores: CandidateScores): number => {
+    const dimScores = DIMS.map(d => getScore(scores, d.scoreKey));
+    const dimWeights = weights.map(w => w.weight);
+    const totalWeight = dimWeights.reduce((a, b) => a + b, 0);
+    if (totalWeight === 0) return 0;
+    return dimScores.reduce((sum, s, i) => sum + s * (dimWeights[i] || 0), 0) / totalWeight;
+  };
+
+  // Build a human-readable check string
+  const buildCheckStr = (scores: CandidateScores, level: DecisionThresholdRow): string => {
+    const parts: string[] = [];
+    for (const dim of DIMS) {
+      const val = getScore(scores, dim.scoreKey);
+      const thresh = getThreshold(level, dim.thresholdKey);
+      const label = isCN ? dim.cn : dim.en;
+      const ok = val >= thresh;
+      parts.push(`${label} ${val}${ok ? '✓' : '✗'}≥${thresh}`);
+    }
+    const avg = calcWeightedAvg(scores);
+    if (level.avg > 0) {
+      const ok = avg >= level.avg;
+      parts.push(`${isCN ? '均分' : 'Avg'} ${avg.toFixed(1)}${ok ? '✓' : '✗'}≥${level.avg}`);
+    }
+    return parts.join('  ');
+  };
+
+  candidates.forEach(c => {
+    const scores = c.scores;
+    const status = c.status;
+    const avg = calcWeightedAvg(scores);
+
+    if (status === 'reject') {
+      // Rejected — but meets pass thresholds?
+      const passCheck = meetsAllDims(scores, thresholds.pass);
+      const passAvgOk = thresholds.pass.avg <= 0 || avg >= thresholds.pass.avg;
+      if (passCheck.met && passAvgOk) {
+        anomalies.push({
+          candidateId: c.candidate_id,
+          candidateName: c.display_name,
+          type: 'decision_inconsistency',
+          description: isCN
+            ? `所有维度达通过标准但被拒绝 — ${buildCheckStr(scores, thresholds.pass)}`
+            : `All dims meet Pass thresholds but Rejected — ${buildCheckStr(scores, thresholds.pass)}`,
+          severity: 'high',
+        });
+      } else {
+        // Meets hold thresholds?
+        const holdCheck = meetsAllDims(scores, thresholds.hold);
+        const holdAvgOk = thresholds.hold.avg <= 0 || avg >= thresholds.hold.avg;
+        if (holdCheck.met && holdAvgOk) {
+          anomalies.push({
+            candidateId: c.candidate_id,
+            candidateName: c.display_name,
+            type: 'decision_inconsistency',
+            description: isCN
+              ? `达待定标准但被拒绝（可能过严）— ${buildCheckStr(scores, thresholds.hold)}`
+              : `Meets Hold thresholds but Rejected (possibly too strict) — ${buildCheckStr(scores, thresholds.hold)}`,
+            severity: 'medium',
+          });
+        }
+      }
+    }
+
+    if (status === 'pass') {
+      // Passed — but has dims below reject threshold?
+      const rejectCheck = meetsAllDims(scores, thresholds.reject);
+      if (!rejectCheck.met) {
+        const failedStr = rejectCheck.failures.join(', ');
+        anomalies.push({
+          candidateId: c.candidate_id,
+          candidateName: c.display_name,
+          type: 'decision_inconsistency',
+          description: isCN
+            ? `${failedStr} 低于清退阈值但被通过 — ${buildCheckStr(scores, thresholds.reject)}`
+            : `${failedStr} below Reject threshold but Passed — ${buildCheckStr(scores, thresholds.reject)}`,
+          severity: 'high',
+        });
+      } else {
+        // Has dims below hold threshold?
+        const holdCheck = meetsAllDims(scores, thresholds.hold);
+        if (!holdCheck.met) {
+          const failedStr = holdCheck.failures.join(', ');
+          anomalies.push({
+            candidateId: c.candidate_id,
+            candidateName: c.display_name,
+            type: 'decision_inconsistency',
+            description: isCN
+              ? `${failedStr} 未达待定标准但被通过（可能过松）— ${buildCheckStr(scores, thresholds.hold)}`
+              : `${failedStr} below Hold threshold but Passed (possibly too lenient) — ${buildCheckStr(scores, thresholds.hold)}`,
+            severity: 'medium',
+          });
+        }
+      }
     }
   });
 
   return { generatedAt: Date.now(), candidateCount: candidates.length, scoreDistributions, anomalies, recommendations: [] };
 };
 
-const BatchCalibrationPanel: React.FC<Props> = ({ lang, candidates, isOpen, onClose }) => {
+// ---- Component ----
+const BatchCalibrationPanel: React.FC<Props> = ({ lang, candidates, isOpen, onClose, decisionThresholds, dimensionWeights }) => {
   const t = translations[lang];
   const isCN = lang === 'CN';
-  const dimLabels = isCN ? DIM_LABELS_CN : DIM_LABELS_EN;
   const [report, setReport] = useState<CalibrationReport | null>(null);
 
   // Lookup map for candidate status
@@ -73,7 +231,7 @@ const BatchCalibrationPanel: React.FC<Props> = ({ lang, candidates, isOpen, onCl
     return map;
   }, [candidates]);
 
-  // Group anomalies by candidate (must be before early return to satisfy React Hooks rules)
+  // Group anomalies by candidate (must be before early return — React Hooks rules)
   const groupedAnomalies = useMemo(() => {
     if (!report) return [];
     const groups: Record<string, AnomalyFlag[]> = {};
@@ -90,7 +248,7 @@ const BatchCalibrationPanel: React.FC<Props> = ({ lang, candidates, isOpen, onCl
 
   const handleRun = () => {
     if (realCandidates.length < 3) return;
-    setReport(runLocalCalibration(realCandidates));
+    setReport(runCalibration(realCandidates, decisionThresholds, dimensionWeights, isCN));
   };
 
   const severityColor: Record<string, string> = { low: 'bg-blue-50 text-blue-700', medium: 'bg-amber-50 text-amber-700', high: 'bg-red-50 text-red-700' };
@@ -106,48 +264,26 @@ const BatchCalibrationPanel: React.FC<Props> = ({ lang, candidates, isOpen, onCl
     return entry ? (isCN ? entry.cn : entry.en) : type;
   };
 
-  // Localize anomaly description
-  const localizeDescription = (a: AnomalyFlag): string => {
-    if (a.type === 'decision_inconsistency') {
-      const scoreMatch = a.description.match(/([\d.]+)\/10/);
-      const score = scoreMatch ? scoreMatch[1] : '?';
-      if (a.description.startsWith('Rejected')) {
-        return isCN ? `拒绝但综合分 ${score}/10` : a.description;
-      }
-      return isCN ? `通过但综合分 ${score}/10` : a.description;
-    }
-    if (a.type === 'score_outlier') {
-      const match = a.description.match(/^(\w+): ([\d.]+) \(mean: ([\d.]+), std: ([\d.]+)\)/);
-      if (match) {
-        const [, dimKey, val, meanVal, stdVal] = match;
-        const dimName = dimLabels[dimKey] || dimKey;
-        return isCN
-          ? `${dimName}: ${val} (均值: ${meanVal}, 标差: ${stdVal})`
-          : `${dimName}: ${val} (mean: ${meanVal}, std: ${stdVal})`;
-      }
-    }
-    return a.description;
-  };
-
-  // Status badge for a candidate
+  // Status badge
   const statusBadge = (candidateId: string) => {
     const c = candidateMap.get(candidateId);
     if (!c) return null;
-    const colors: Record<string, string> = {
-      pass: 'bg-green-100 text-green-700',
-      hold: 'bg-amber-100 text-amber-700',
-      reject: 'bg-red-100 text-red-700',
-    };
-    const labels: Record<string, { cn: string; en: string }> = {
-      pass: { cn: '通过', en: 'Pass' },
-      hold: { cn: '待定', en: 'Hold' },
-      reject: { cn: '未通过', en: 'Reject' },
-    };
+    const colors: Record<string, string> = { pass: 'bg-green-100 text-green-700', hold: 'bg-amber-100 text-amber-700', reject: 'bg-red-100 text-red-700' };
+    const labels: Record<string, { cn: string; en: string }> = { pass: { cn: '通过', en: 'Pass' }, hold: { cn: '待定', en: 'Hold' }, reject: { cn: '未通过', en: 'Reject' } };
     return (
       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${colors[c.status] || ''}`}>
         {isCN ? labels[c.status]?.cn : labels[c.status]?.en}
       </span>
     );
+  };
+
+  // Get threshold values for a dimension (for bar markers)
+  const getThresholdMarkers = (scoreKey: string) => {
+    const dim = DIMS.find(d => d.scoreKey === scoreKey);
+    if (!dim) return null;
+    const rejectVal = (decisionThresholds.reject as any)[dim.thresholdKey] || 0;
+    const passVal = (decisionThresholds.pass as any)[dim.thresholdKey] || 0;
+    return { reject: rejectVal, pass: passVal };
   };
 
   return (
@@ -169,18 +305,30 @@ const BatchCalibrationPanel: React.FC<Props> = ({ lang, candidates, isOpen, onCl
 
               {report && (
                 <>
-                  {/* Score Distributions */}
+                  {/* Score Distributions with threshold markers */}
                   <div className="bg-gray-50 rounded-xl p-4">
-                    <h3 className="text-sm font-bold text-gray-600 mb-3">{(t as any).calibration_distribution}</h3>
+                    <h3 className="text-sm font-bold text-gray-600 mb-1">{(t as any).calibration_distribution}</h3>
+                    <div className="flex items-center gap-3 mb-3 text-[10px] text-gray-400">
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 bg-red-400 rounded-full inline-block" />{isCN ? '清退线' : 'Reject'}</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-400 rounded-full inline-block" />{isCN ? '通过线' : 'Pass'}</span>
+                    </div>
                     <div className="space-y-2">
-                      {DIM_KEYS.map(dim => {
-                        const dist = report.scoreDistributions[dim];
+                      {DIMS.map(dim => {
+                        const dist = report.scoreDistributions[dim.scoreKey];
                         if (!dist) return null;
+                        const markers = getThresholdMarkers(dim.scoreKey);
                         return (
-                          <div key={dim} className="flex items-center justify-between text-xs">
-                            <span className="font-semibold text-gray-700 w-16">{dimLabels[dim]}</span>
+                          <div key={dim.scoreKey} className="flex items-center justify-between text-xs">
+                            <span className="font-semibold text-gray-700 w-16">{isCN ? dim.cn : dim.en}</span>
                             <div className="flex-1 mx-3 bg-gray-200 rounded-full h-2 relative">
                               <div className="bg-tsinghua-400 rounded-full h-2" style={{ width: `${(dist.mean / 10) * 100}%` }} />
+                              {/* Threshold markers */}
+                              {markers && markers.reject > 0 && (
+                                <div className="absolute top-[-2px] w-0.5 h-3 bg-red-400 rounded-full" style={{ left: `${(markers.reject / 10) * 100}%` }} title={`${isCN ? '清退' : 'Reject'}: ${markers.reject}`} />
+                              )}
+                              {markers && markers.pass > 0 && (
+                                <div className="absolute top-[-2px] w-0.5 h-3 bg-green-400 rounded-full" style={{ left: `${(markers.pass / 10) * 100}%` }} title={`${isCN ? '通过' : 'Pass'}: ${markers.pass}`} />
+                              )}
                             </div>
                             <span className="text-gray-500 w-40 text-right">
                               {isCN ? '均' : 'M'}={dist.mean} {isCN ? '标差' : 'SD'}={dist.std} [{dist.min}-{dist.max}]
@@ -202,7 +350,6 @@ const BatchCalibrationPanel: React.FC<Props> = ({ lang, candidates, isOpen, onCl
                           const displayName = anomalies[0].candidateName || candidateId;
                           return (
                             <div key={candidateId} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                              {/* Candidate header */}
                               <div className="flex items-center gap-2 mb-2">
                                 <span className="text-sm font-black text-gray-900">{displayName}</span>
                                 {statusBadge(candidateId)}
@@ -210,13 +357,12 @@ const BatchCalibrationPanel: React.FC<Props> = ({ lang, candidates, isOpen, onCl
                                   {anomalies.length} {isCN ? '项异常' : 'anomalies'}
                                 </span>
                               </div>
-                              {/* Anomaly items */}
                               <div className="space-y-1.5">
                                 {anomalies.map((a, i) => (
                                   <div key={i} className={`px-3 py-2 rounded-lg text-xs ${severityColor[a.severity]}`}>
                                     <span className="font-semibold">{localizeType(a.type)}</span>
                                     <span className="mx-1.5 opacity-40">|</span>
-                                    <span>{localizeDescription(a)}</span>
+                                    <span>{a.description}</span>
                                   </div>
                                 ))}
                               </div>

@@ -53,49 +53,86 @@ const runCalibration = (
   const scoreDistributions: CalibrationReport['scoreDistributions'] = {};
   const anomalies: AnomalyFlag[] = [];
 
-  // ---- 1. Score distribution + IQR outlier detection ----
-  DIMS.forEach(dim => {
-    const values = candidates.map(c => (c.scores as any)[dim.scoreKey] || 0).filter(v => v > 0);
-    if (values.length < 2) return;
-    const m = mean(values);
-    const s = std(values);
-    scoreDistributions[dim.scoreKey] = { mean: +m.toFixed(2), std: +s.toFixed(2), min: Math.min(...values), max: Math.max(...values) };
+  // Helper: compute distribution + IQR outlier detection for a list of dims
+  const processDims = (dims: ReadonlyArray<{ scoreKey: string; thresholdKey: string; cn: string; en: string }>) => {
+    dims.forEach(dim => {
+      const values = candidates.map(c => (c.scores as any)[dim.scoreKey] || 0).filter(v => v > 0);
+      if (values.length < 2) return;
+      const m = mean(values);
+      const s = std(values);
+      scoreDistributions[dim.scoreKey] = { mean: +m.toFixed(2), std: +s.toFixed(2), min: Math.min(...values), max: Math.max(...values) };
 
-    // IQR outlier detection
-    const { q1, q3 } = quartiles(values);
-    const iqr = q3 - q1;
-    const lowerMild = q1 - 1.5 * iqr;
-    const upperMild = q3 + 1.5 * iqr;
-    const lowerExtreme = q1 - 3 * iqr;
-    const upperExtreme = q3 + 3 * iqr;
+      // IQR outlier detection
+      const { q1, q3 } = quartiles(values);
+      const iqr = q3 - q1;
+      const lowerMild = q1 - 1.5 * iqr;
+      const upperMild = q3 + 1.5 * iqr;
+      const lowerExtreme = q1 - 3 * iqr;
+      const upperExtreme = q3 + 3 * iqr;
 
-    candidates.forEach(c => {
-      const val = (c.scores as any)[dim.scoreKey] || 0;
-      if (val <= 0) return;
-      const dimLabel = isCN ? dim.cn : dim.en;
-      if (val < lowerExtreme || val > upperExtreme) {
-        anomalies.push({
-          candidateId: c.candidate_id,
-          candidateName: c.display_name,
-          type: 'score_outlier',
-          description: isCN
-            ? `${dimLabel}: ${val} (Q1=${q1.toFixed(1)} Q3=${q3.toFixed(1)} IQR=${iqr.toFixed(1)})`
-            : `${dimLabel}: ${val} (Q1=${q1.toFixed(1)} Q3=${q3.toFixed(1)} IQR=${iqr.toFixed(1)})`,
-          severity: 'high',
-        });
-      } else if (val < lowerMild || val > upperMild) {
-        anomalies.push({
-          candidateId: c.candidate_id,
-          candidateName: c.display_name,
-          type: 'score_outlier',
-          description: isCN
-            ? `${dimLabel}: ${val} (Q1=${q1.toFixed(1)} Q3=${q3.toFixed(1)} IQR=${iqr.toFixed(1)})`
-            : `${dimLabel}: ${val} (Q1=${q1.toFixed(1)} Q3=${q3.toFixed(1)} IQR=${iqr.toFixed(1)})`,
-          severity: 'medium',
-        });
-      }
+      candidates.forEach(c => {
+        const val = (c.scores as any)[dim.scoreKey] || 0;
+        if (val <= 0) return;
+        const dimLabel = isCN ? dim.cn : dim.en;
+        if (val < lowerExtreme || val > upperExtreme) {
+          anomalies.push({
+            candidateId: c.candidate_id,
+            candidateName: c.display_name,
+            type: 'score_outlier',
+            description: isCN
+              ? `${dimLabel}: ${val} (Q1=${q1.toFixed(1)} Q3=${q3.toFixed(1)} IQR=${iqr.toFixed(1)})`
+              : `${dimLabel}: ${val} (Q1=${q1.toFixed(1)} Q3=${q3.toFixed(1)} IQR=${iqr.toFixed(1)})`,
+            severity: 'high',
+          });
+        } else if (val < lowerMild || val > upperMild) {
+          anomalies.push({
+            candidateId: c.candidate_id,
+            candidateName: c.display_name,
+            type: 'score_outlier',
+            description: isCN
+              ? `${dimLabel}: ${val} (Q1=${q1.toFixed(1)} Q3=${q3.toFixed(1)} IQR=${iqr.toFixed(1)})`
+              : `${dimLabel}: ${val} (Q1=${q1.toFixed(1)} Q3=${q3.toFixed(1)} IQR=${iqr.toFixed(1)})`,
+            severity: 'medium',
+          });
+        }
+      });
     });
-  });
+  };
+
+  // ---- 1. Score distribution + IQR outlier detection ----
+  // Core dimensions
+  processDims(DIMS);
+  // Open-ended dimensions
+  processDims(OE_DIMS);
+
+  // Overall score (simple average of 5 core dims)
+  const overallValues = candidates.map(c => c.scores.overall || 0).filter(v => v > 0);
+  if (overallValues.length >= 2) {
+    scoreDistributions['overall'] = {
+      mean: +mean(overallValues).toFixed(2),
+      std: +std(overallValues).toFixed(2),
+      min: Math.min(...overallValues),
+      max: Math.max(...overallValues),
+    };
+  }
+
+  // Weighted average
+  const calcWAvg = (scores: CandidateScores): number => {
+    const dimScores = DIMS.map(d => (scores as any)[d.scoreKey] || 0);
+    const dimWeights = weights.map(w => w.weight);
+    const totalWeight = dimWeights.reduce((a, b) => a + b, 0);
+    if (totalWeight === 0) return 0;
+    return dimScores.reduce((sum, s, i) => sum + s * (dimWeights[i] || 0), 0) / totalWeight;
+  };
+  const wAvgValues = candidates.map(c => calcWAvg(c.scores)).filter(v => v > 0);
+  if (wAvgValues.length >= 2) {
+    scoreDistributions['weighted_avg'] = {
+      mean: +mean(wAvgValues).toFixed(2),
+      std: +std(wAvgValues).toFixed(2),
+      min: +Math.min(...wAvgValues).toFixed(1),
+      max: +Math.max(...wAvgValues).toFixed(1),
+    };
+  }
 
   // ---- 2. Decision inconsistency — based on actual admission thresholds ----
   const getScore = (scores: CandidateScores, key: string): number => (scores as any)[key] || 0;
@@ -279,11 +316,81 @@ const BatchCalibrationPanel: React.FC<Props> = ({ lang, candidates, isOpen, onCl
 
   // Get threshold values for a dimension (for bar markers)
   const getThresholdMarkers = (scoreKey: string) => {
-    const dim = DIMS.find(d => d.scoreKey === scoreKey);
+    const allDims = [...DIMS, ...OE_DIMS];
+    const dim = allDims.find(d => d.scoreKey === scoreKey);
     if (!dim) return null;
     const rejectVal = (decisionThresholds.reject as any)[dim.thresholdKey] || 0;
     const passVal = (decisionThresholds.pass as any)[dim.thresholdKey] || 0;
     return { reject: rejectVal, pass: passVal };
+  };
+
+  // Reusable distribution bar row component
+  const DistRow: React.FC<{
+    label: string; dist: { mean: number; std: number; min: number; max: number }; scoreKey?: string; barColor?: string; maxScale?: number;
+  }> = ({ label, dist, scoreKey, barColor, maxScale = 10 }) => {
+    const markers = scoreKey ? getThresholdMarkers(scoreKey) : null;
+    const color = barColor || 'bg-tsinghua-400';
+    // Tick positions: evenly divide the scale
+    const ticks = maxScale === 10 ? [0, 2, 4, 6, 8, 10] : [0, Math.round(maxScale / 4), Math.round(maxScale / 2), Math.round(maxScale * 3 / 4), maxScale];
+    return (
+      <div className="text-xs">
+        <div className="flex items-center justify-between mb-0.5">
+          <span className="font-semibold text-gray-700 w-20 truncate">{label}</span>
+          <span className="text-gray-500 text-[11px]">
+            <span className="font-bold text-gray-700">{dist.mean}</span>
+            <span className="text-gray-400 mx-0.5">±{dist.std}</span>
+            <span className="text-gray-400">[{dist.min}–{dist.max}]</span>
+          </span>
+        </div>
+        <div className="flex items-center gap-0">
+          <div className="flex-1 relative">
+            {/* Track background */}
+            <div className="bg-gray-200 rounded-full h-3 relative overflow-visible">
+              {/* Mean bar */}
+              <div className={`${color} rounded-full h-3 transition-all`} style={{ width: `${Math.min((dist.mean / maxScale) * 100, 100)}%` }} />
+              {/* ±1 std range overlay */}
+              {dist.std > 0 && (
+                <div
+                  className="absolute top-0 h-3 bg-black/10 rounded-full"
+                  style={{
+                    left: `${Math.max((dist.mean - dist.std) / maxScale * 100, 0)}%`,
+                    width: `${Math.min((dist.std * 2) / maxScale * 100, 100 - Math.max((dist.mean - dist.std) / maxScale * 100, 0))}%`,
+                  }}
+                  title={isCN ? `±1标准差范围: ${(dist.mean - dist.std).toFixed(1)}–${(dist.mean + dist.std).toFixed(1)}` : `±1 SD range: ${(dist.mean - dist.std).toFixed(1)}–${(dist.mean + dist.std).toFixed(1)}`}
+                />
+              )}
+              {/* Mean marker (diamond) */}
+              <div
+                className="absolute top-[-1px] w-0 h-0"
+                style={{
+                  left: `${(dist.mean / maxScale) * 100}%`,
+                  borderLeft: '4px solid transparent',
+                  borderRight: '4px solid transparent',
+                  borderTop: '5px solid #1f2937',
+                  transform: 'translateX(-4px)',
+                }}
+                title={isCN ? `全体均值: ${dist.mean}` : `Mean: ${dist.mean}`}
+              />
+              {/* Threshold markers */}
+              {markers && markers.reject > 0 && (
+                <div className="absolute top-[-3px] w-[2px] h-[18px] bg-red-500 rounded-full" style={{ left: `${(markers.reject / maxScale) * 100}%` }} title={`${isCN ? '清退线' : 'Reject'}: ${markers.reject}`} />
+              )}
+              {markers && markers.pass > 0 && (
+                <div className="absolute top-[-3px] w-[2px] h-[18px] bg-green-500 rounded-full" style={{ left: `${(markers.pass / maxScale) * 100}%` }} title={`${isCN ? '通过线' : 'Pass'}: ${markers.pass}`} />
+              )}
+            </div>
+            {/* Scale ticks */}
+            <div className="relative h-3 mt-0">
+              {ticks.map(v => (
+                <span key={v} className="absolute text-[9px] text-gray-400 -translate-x-1/2" style={{ left: `${(v / maxScale) * 100}%` }}>
+                  {v}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -305,37 +412,60 @@ const BatchCalibrationPanel: React.FC<Props> = ({ lang, candidates, isOpen, onCl
 
               {report && (
                 <>
-                  {/* Score Distributions with threshold markers */}
+                  {/* Score Distributions */}
                   <div className="bg-gray-50 rounded-xl p-4">
                     <h3 className="text-sm font-bold text-gray-600 mb-1">{(t as any).calibration_distribution}</h3>
+                    <p className="text-[10px] text-gray-400 mb-2">
+                      {isCN
+                        ? '柱状条 = 全体候选人均值 | 半透明区 = ±1标准差范围 | ▼ = 均值位置'
+                        : 'Bar = candidate mean | Shaded = ±1 SD range | ▼ = mean position'}
+                    </p>
+                    {/* Legend */}
                     <div className="flex items-center gap-3 mb-3 text-[10px] text-gray-400">
-                      <span className="flex items-center gap-1"><span className="w-2 h-2 bg-red-400 rounded-full inline-block" />{isCN ? '清退线' : 'Reject'}</span>
-                      <span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-400 rounded-full inline-block" />{isCN ? '通过线' : 'Pass'}</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 bg-red-500 rounded-full inline-block" />{isCN ? '清退线' : 'Reject'}</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full inline-block" />{isCN ? '通过线' : 'Pass'}</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 bg-black/10 rounded-full inline-block" />{isCN ? '±1标准差' : '±1 SD'}</span>
                     </div>
-                    <div className="space-y-2">
+
+                    {/* Core dims */}
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">{isCN ? '核心维度（计入总分）' : 'Core Dimensions (in total score)'}</p>
                       {DIMS.map(dim => {
                         const dist = report.scoreDistributions[dim.scoreKey];
                         if (!dist) return null;
-                        const markers = getThresholdMarkers(dim.scoreKey);
-                        return (
-                          <div key={dim.scoreKey} className="flex items-center justify-between text-xs">
-                            <span className="font-semibold text-gray-700 w-16">{isCN ? dim.cn : dim.en}</span>
-                            <div className="flex-1 mx-3 bg-gray-200 rounded-full h-2 relative">
-                              <div className="bg-tsinghua-400 rounded-full h-2" style={{ width: `${(dist.mean / 10) * 100}%` }} />
-                              {/* Threshold markers */}
-                              {markers && markers.reject > 0 && (
-                                <div className="absolute top-[-2px] w-0.5 h-3 bg-red-400 rounded-full" style={{ left: `${(markers.reject / 10) * 100}%` }} title={`${isCN ? '清退' : 'Reject'}: ${markers.reject}`} />
-                              )}
-                              {markers && markers.pass > 0 && (
-                                <div className="absolute top-[-2px] w-0.5 h-3 bg-green-400 rounded-full" style={{ left: `${(markers.pass / 10) * 100}%` }} title={`${isCN ? '通过' : 'Pass'}: ${markers.pass}`} />
-                              )}
-                            </div>
-                            <span className="text-gray-500 w-40 text-right">
-                              {isCN ? '均' : 'M'}={dist.mean} {isCN ? '标差' : 'SD'}={dist.std} [{dist.min}-{dist.max}]
-                            </span>
-                          </div>
-                        );
+                        return <DistRow key={dim.scoreKey} label={isCN ? dim.cn : dim.en} dist={dist} scoreKey={dim.scoreKey} />;
                       })}
+                    </div>
+
+                    {/* Open-ended dims */}
+                    {OE_DIMS.some(dim => report.scoreDistributions[dim.scoreKey]) && (
+                      <div className="space-y-3 mt-4 pt-3 border-t border-gray-200">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">{isCN ? '开放题（不计入总分，但参与录取阈值判定）' : 'Open-Ended (not in total score, but checked against thresholds)'}</p>
+                        {OE_DIMS.map(dim => {
+                          const dist = report.scoreDistributions[dim.scoreKey];
+                          if (!dist) return null;
+                          return <DistRow key={dim.scoreKey} label={isCN ? dim.cn : dim.en} dist={dist} scoreKey={dim.scoreKey} barColor="bg-indigo-400" />;
+                        })}
+                      </div>
+                    )}
+
+                    {/* Overall + Weighted Avg */}
+                    <div className="space-y-3 mt-4 pt-3 border-t border-gray-200">
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">{isCN ? '综合分数' : 'Aggregate Scores'}</p>
+                      {report.scoreDistributions['overall'] && (
+                        <DistRow
+                          label={isCN ? '总分' : 'Overall'}
+                          dist={report.scoreDistributions['overall']}
+                          barColor="bg-purple-500"
+                        />
+                      )}
+                      {report.scoreDistributions['weighted_avg'] && (
+                        <DistRow
+                          label={isCN ? '加权均分' : 'Weighted Avg'}
+                          dist={report.scoreDistributions['weighted_avg']}
+                          barColor="bg-amber-500"
+                        />
+                      )}
                     </div>
                   </div>
 

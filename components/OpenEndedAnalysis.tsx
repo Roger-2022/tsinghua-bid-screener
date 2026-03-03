@@ -3,29 +3,76 @@ import { OpenEndedQuestion, Language } from '../types';
 import { translations } from '../i18n';
 
 interface Props {
-  question: OpenEndedQuestion;
+  questions: OpenEndedQuestion[];
   lang: Language;
-  onSubmit: (answer: string) => void;
+  onSubmit: (question: OpenEndedQuestion, answer: string) => void;
 }
 
-const OpenEndedAnalysis: React.FC<Props> = ({ question, lang, onSubmit }) => {
+const OpenEndedAnalysis: React.FC<Props> = ({ questions, lang, onSubmit }) => {
   const t = translations[lang];
   const isCN = lang === 'CN';
+  const [selectedQuestion, setSelectedQuestion] = useState<OpenEndedQuestion | null>(null);
   const [answer, setAnswer] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  const topic = isCN ? question.topic_zh : question.topic_en;
-  const context = isCN ? question.context_zh : question.context_en;
-  const questionText = isCN ? question.question_zh : question.question_en;
 
   const charCount = answer.length;
   const canSubmit = charCount >= 100 && !submitting;
 
   const handleSubmit = () => {
-    if (!canSubmit) return;
+    if (!canSubmit || !selectedQuestion) return;
     setSubmitting(true);
-    onSubmit(answer.trim());
+    onSubmit(selectedQuestion, answer.trim());
   };
+
+  // ---- Step 1: Topic Selection ----
+  if (!selectedQuestion) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50/30 flex items-center justify-center px-4 py-12">
+        <div className="max-w-2xl w-full space-y-6">
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-purple-100 text-purple-700 rounded-full text-xs font-bold tracking-wider uppercase">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+              {(t as any).openEndedTitle}
+            </div>
+            <h2 className="text-xl font-black text-gray-900">{(t as any).openEndedPickTitle}</h2>
+            <p className="text-sm text-gray-500">{(t as any).openEndedPickSubtitle}</p>
+          </div>
+
+          {/* Topic Cards */}
+          <div className="space-y-3">
+            {questions.map((q, idx) => {
+              const topic = isCN ? q.topic_zh : q.topic_en;
+              const context = isCN ? q.context_zh : q.context_en;
+              return (
+                <button
+                  key={q.id}
+                  onClick={() => setSelectedQuestion(q)}
+                  className="w-full text-left bg-white rounded-2xl border-2 border-gray-100 hover:border-purple-400 hover:shadow-lg transition-all p-5 group"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black text-lg group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                      {String.fromCharCode(65 + idx)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-gray-900 text-base mb-1.5 group-hover:text-purple-700 transition-colors">{topic}</h3>
+                      <p className="text-sm text-gray-500 leading-relaxed line-clamp-2">{context}</p>
+                    </div>
+                    <svg className="w-5 h-5 text-gray-300 group-hover:text-purple-500 flex-shrink-0 mt-1 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Step 2: Answer Selected Question ----
+  const topic = isCN ? selectedQuestion.topic_zh : selectedQuestion.topic_en;
+  const context = isCN ? selectedQuestion.context_zh : selectedQuestion.context_en;
+  const questionText = isCN ? selectedQuestion.question_zh : selectedQuestion.question_en;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50/30 flex items-center justify-center px-4 py-12">
@@ -39,8 +86,15 @@ const OpenEndedAnalysis: React.FC<Props> = ({ question, lang, onSubmit }) => {
           <p className="text-sm text-gray-500">{(t as any).openEndedSubtitle}</p>
         </div>
 
-        {/* Topic Badge */}
-        <div className="flex justify-center">
+        {/* Back + Topic Badge */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => { setSelectedQuestion(null); setAnswer(''); }}
+            className="text-xs text-gray-400 hover:text-purple-600 font-bold flex items-center gap-1 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            {(t as any).openEndedBackToTopics}
+          </button>
           <span className="px-3 py-1 bg-gray-900 text-white text-xs font-bold rounded-full tracking-wide">
             {topic}
           </span>

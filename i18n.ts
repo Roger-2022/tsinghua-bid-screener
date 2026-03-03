@@ -399,6 +399,9 @@ export const translations = {
     hybrid_probing_remaining: "剩余AI调用: {count}",
     // Open-Ended Analysis
     openEndedTitle: "深度分析题",
+    openEndedPickTitle: "请选择一个你感兴趣的话题",
+    openEndedPickSubtitle: "以下三个话题任选其一，选择后进入作答",
+    openEndedBackToTopics: "重新选择话题",
     openEndedSubtitle: "请阅读以下事件背景，撰写你的分析",
     openEndedPlaceholder: "请在此撰写你的分析（500字以内）...",
     openEndedSubmit: "提交分析并进入评估",
@@ -844,6 +847,9 @@ export const translations = {
     hybrid_probing_remaining: "Remaining AI calls: {count}",
     // Open-Ended Analysis
     openEndedTitle: "Deep Analysis Question",
+    openEndedPickTitle: "Choose a topic that interests you",
+    openEndedPickSubtitle: "Pick one of the three topics below to answer",
+    openEndedBackToTopics: "Back to topics",
     openEndedSubtitle: "Read the event background below and write your analysis",
     openEndedPlaceholder: "Write your analysis here (max 500 characters)...",
     openEndedSubmit: "Submit Analysis & Proceed",

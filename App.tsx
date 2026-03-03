@@ -1106,22 +1106,20 @@ const App: React.FC = () => {
 
   const transitionToOpenEnded = (history: Message[], finalResponses: ObjectiveResponse[]) => {
     setMessages(history);
-    // Pick a random question from the open-ended pool
-    const pool = openEndedQuestions.length > 0 ? openEndedQuestions : DEFAULT_OPEN_ENDED_QUESTIONS;
-    const randomQ = pool[Math.floor(Math.random() * pool.length)];
-    setSelectedOpenEndedQuestion(randomQ);
+    // Pass all questions to OpenEndedAnalysis — candidate picks one
+    setSelectedOpenEndedQuestion(null);
     setOpenEndedResponse(null);
     setStage(AppStage.OPEN_ENDED_ANALYSIS);
   };
 
-  const handleOpenEndedSubmit = (answer: string) => {
-    if (!selectedOpenEndedQuestion) return;
+  const handleOpenEndedSubmit = (question: OpenEndedQuestion, answer: string) => {
     const oeResponse: OpenEndedResponse = {
-      questionId: selectedOpenEndedQuestion.id,
-      question: selectedOpenEndedQuestion,
+      questionId: question.id,
+      question,
       answer,
       timestamp: Date.now(),
     };
+    setSelectedOpenEndedQuestion(question);
     setOpenEndedResponse(oeResponse);
     finishFullInterview(messages, objectiveResponses, oeResponse);
   };
@@ -1434,9 +1432,9 @@ const App: React.FC = () => {
             adaptiveState={adaptiveQuestionState}
           />
         )}
-        {stage === AppStage.OPEN_ENDED_ANALYSIS && selectedOpenEndedQuestion && (
+        {stage === AppStage.OPEN_ENDED_ANALYSIS && (
           <OpenEndedAnalysis
-            question={selectedOpenEndedQuestion}
+            questions={openEndedQuestions.length > 0 ? openEndedQuestions : DEFAULT_OPEN_ENDED_QUESTIONS}
             lang={lang}
             onSubmit={handleOpenEndedSubmit}
           />

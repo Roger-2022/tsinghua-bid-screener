@@ -578,15 +578,15 @@ const App: React.FC = () => {
   const [helpConfig, setHelpConfig] = useState<HelpWidgetConfig>(() => {
     try {
       const raw = localStorage.getItem('tsinghua_help_config');
-      return raw ? JSON.parse(raw) : { contactEmail: '', businessHours: '', extraNote: '' };
-    } catch { return { contactEmail: '', businessHours: '', extraNote: '' }; }
+      return raw ? JSON.parse(raw) : { contactEmail: '', businessHours: '', extraNote: '', recruitPostUrl: '' };
+    } catch { return { contactEmail: '', businessHours: '', extraNote: '', recruitPostUrl: '' }; }
   });
   // Fetch help config from Supabase on mount
   useEffect(() => {
     if (!isSupabaseConfigured() || !supabase) return;
     supabase.from('help_config').select('*').eq('id', 'default').single().then(({ data }) => {
       if (data) {
-        const cfg: HelpWidgetConfig = { contactEmail: data.contact_email || '', businessHours: data.business_hours || '', extraNote: data.extra_note || '' };
+        const cfg: HelpWidgetConfig = { contactEmail: data.contact_email || '', businessHours: data.business_hours || '', extraNote: data.extra_note || '', recruitPostUrl: data.recruit_post_url || '' };
         setHelpConfig(cfg);
         localStorage.setItem('tsinghua_help_config', JSON.stringify(cfg));
       }
@@ -1425,7 +1425,7 @@ const App: React.FC = () => {
       {/* Main Content */}
       <div className="container mx-auto pb-20">
         {stage === AppStage.WELCOME && <WelcomeScreen onStart={handleStartForm} lang={lang} />}
-        {stage === AppStage.BASIC_FORM && <BasicInfoForm onSubmit={handleFormSubmit} lang={lang} />}
+        {stage === AppStage.BASIC_FORM && <BasicInfoForm onSubmit={handleFormSubmit} lang={lang} recruitPostUrl={helpConfig.recruitPostUrl} />}
         {stage === AppStage.INTERVIEW_QUESTIONNAIRE && (
           <ChatInterface
             messages={messages}
@@ -1513,7 +1513,7 @@ const App: React.FC = () => {
           setHelpConfig(cfg);
           localStorage.setItem('tsinghua_help_config', JSON.stringify(cfg));
           if (isSupabaseConfigured() && supabase) {
-            supabase.from('help_config').upsert({ id: 'default', contact_email: cfg.contactEmail, business_hours: cfg.businessHours, extra_note: cfg.extraNote }).then(({ error }) => {
+            supabase.from('help_config').upsert({ id: 'default', contact_email: cfg.contactEmail, business_hours: cfg.businessHours, extra_note: cfg.extraNote, recruit_post_url: cfg.recruitPostUrl }).then(({ error }) => {
               if (error) console.warn('[Supabase] Help config sync failed:', error.message);
             });
           }

@@ -446,6 +446,7 @@ export const translations = {
     helpNotSet: "暂未设置",
     helpSave: "保存",
     helpExtraNote: "补充说明",
+    helpRecruitPostUrl: "招生推送链接",
   },
   EN: {
     title: "Business Model Workshop AI Screener",
@@ -894,5 +895,6 @@ export const translations = {
     helpNotSet: "Not configured",
     helpSave: "Save",
     helpExtraNote: "Additional Info",
+    helpRecruitPostUrl: "Recruit Post Link",
   }
 };

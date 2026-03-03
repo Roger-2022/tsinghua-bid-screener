@@ -81,6 +81,20 @@ const HelpWidget: React.FC<Props> = ({ config, lang, isAdmin = false, onSave }) 
               )}
             </div>
 
+            {/* Recruit Post URL (admin only) */}
+            {isAdmin && (
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">{(t as any).helpRecruitPostUrl}</p>
+                <input
+                  type="url"
+                  value={editConfig.recruitPostUrl}
+                  onChange={e => setEditConfig(prev => ({ ...prev, recruitPostUrl: e.target.value }))}
+                  placeholder={lang === 'CN' ? '例如：https://mp.weixin.qq.com/s/xxx' : 'e.g., https://mp.weixin.qq.com/s/xxx'}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-tsinghua-200"
+                />
+              </div>
+            )}
+
             {/* Extra Note */}
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">{(t as any).helpExtraNote}</p>

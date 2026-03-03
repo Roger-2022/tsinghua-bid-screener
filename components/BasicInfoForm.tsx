@@ -7,6 +7,7 @@ interface Props {
   onSubmit: (info: CandidateBasicInfo) => void;
   lang: Language;
   initialData?: CandidateBasicInfo;
+  recruitPostUrl?: string;
 }
 
 const GRADE_KEYS = [
@@ -29,7 +30,7 @@ const gradeToIdentity = (grade: string): CandidateBasicInfo['identity'] => {
   return 'Undergraduate';
 };
 
-const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
+const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData, recruitPostUrl }) => {
   const t = translations[lang];
 
   const [formData, setFormData] = useState<CandidateBasicInfo>(initialData || {
@@ -50,7 +51,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
     homeworkWillingness: false,
     leaderWillingness: false,
     selfDescription: '',
-    hasReadRecruitPost: 'familiar_no_need',
+    hasReadRecruitPost: '',
     careerPlan: '',
     referralSource: '',
   });
@@ -70,7 +71,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
       !formData.name || !formData.wechat || !formData.school || !formData.department ||
       !formData.phone || !formData.selfDescription ||
       !formData.major || !formData.gradeOrLevel || !formData.email || !formData.projects ||
-      !formData.careerPlan || !formData.referralSource ||
+      !formData.hasReadRecruitPost || !formData.careerPlan || !formData.referralSource ||
       formData.timeCommitmentWeeks1to8 <= 0 || formData.timeCommitmentWeeks9to16 <= 0
     ) {
       setValidationError(true);
@@ -263,20 +264,26 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
               <label className="text-xs font-black text-blue-600 uppercase tracking-widest">
                 {(t as any).hasReadRecruitPost} <span className="text-red-400">*</span>
               </label>
-              <a
-                href="#"
-                className="text-xs font-bold text-tsinghua-600 hover:text-tsinghua-800 underline"
-                onClick={(e) => e.preventDefault()}
-              >
-                {(t as any).hasReadRecruitPostLink}
-              </a>
+              {recruitPostUrl ? (
+                <a
+                  href={recruitPostUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-bold text-tsinghua-600 hover:text-tsinghua-800 underline"
+                >
+                  {(t as any).hasReadRecruitPostLink}
+                </a>
+              ) : (
+                <span className="text-xs text-gray-400">{(t as any).hasReadRecruitPostLink}</span>
+              )}
             </div>
             <select
               name="hasReadRecruitPost"
               value={formData.hasReadRecruitPost}
               onChange={handleChange}
-              className="w-full px-5 py-3 border border-blue-100 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none bg-white font-black"
+              className={`w-full px-5 py-3 border border-blue-100 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none bg-white ${formData.hasReadRecruitPost ? 'font-black' : 'text-gray-400'}`}
             >
+              <option value="" disabled>{lang === 'CN' ? '请选择' : 'Please select'}</option>
               <option value="yes">{(t as any).readPostYes}</option>
               <option value="familiar_no_need">{(t as any).readPostNo}</option>
             </select>

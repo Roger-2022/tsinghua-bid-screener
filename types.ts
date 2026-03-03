@@ -43,7 +43,7 @@ export interface CandidateBasicInfo {
   homeworkWillingness: boolean;
   leaderWillingness: boolean;
   selfDescription: string;
-  hasReadRecruitPost: 'yes' | 'familiar_no_need';
+  hasReadRecruitPost: '' | 'yes' | 'familiar_no_need';
   careerPlan: string;
   referralSource: string;
 }
@@ -52,6 +52,7 @@ export interface HelpWidgetConfig {
   contactEmail: string;
   businessHours: string;
   extraNote: string;
+  recruitPostUrl: string;   // 招生推送链接，管理员可编辑
 }
 
 // ========== Question System ==========

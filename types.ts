@@ -42,7 +42,7 @@ export interface CandidateBasicInfo {
   homeworkWillingness: boolean;
   leaderWillingness: boolean;
   selfDescription: string;
-  hasReadRecruitPost: 'yes' | 'no';
+  hasReadRecruitPost: 'yes' | 'familiar_no_need';
   careerPlan: string;
   referralSource: string;
 }

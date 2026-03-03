@@ -177,7 +177,7 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
         homework_willingness: true,
         leader_willingness: false,
         self_description: '',
-        has_read_recruit_post: 'no',
+        has_read_recruit_post: 'familiar_no_need',
         career_plan: '',
         referral_source: '',
       },

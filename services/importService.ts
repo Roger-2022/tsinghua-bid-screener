@@ -248,7 +248,7 @@ const mapRowToRecord = (row: any, index: number, errors: string[]): CandidateRec
         homework_willingness: parseBool(row.homework),
         leader_willingness: parseBool(row.leader),
         self_description: row.self_description || '',
-        has_read_recruit_post: row.has_read_recruit_post || 'no',
+        has_read_recruit_post: row.has_read_recruit_post || 'familiar_no_need',
         career_plan: row.career_plan || '',
         referral_source: row.referral_source || '',
       },

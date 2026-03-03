@@ -20,9 +20,17 @@ const REFERRAL_KEYS = [
   'wechatPost', 'friendRefer', 'teacherRefer', 'schoolForum', 'socialMedia', 'searchEngine', 'other',
 ] as const;
 
+// Derive identity from grade selection
+const gradeToIdentity = (grade: string): CandidateBasicInfo['identity'] => {
+  if (['freshman', 'sophomore', 'junior', 'senior'].includes(grade)) return 'Undergraduate';
+  if (['master1', 'master2', 'master3'].includes(grade)) return 'Master';
+  if (['mba1', 'mba2'].includes(grade)) return 'MBA';
+  if (['phd1', 'phd2', 'phd3', 'phd4', 'phd5'].includes(grade)) return 'PhD';
+  return 'Undergraduate';
+};
+
 const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
   const t = translations[lang];
-  const identityKeys: CandidateBasicInfo['identity'][] = ['Undergraduate', 'Master', 'MBA', 'PhD'];
 
   const [formData, setFormData] = useState<CandidateBasicInfo>(initialData || {
     name: '',
@@ -41,7 +49,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
     homeworkWillingness: false,
     leaderWillingness: false,
     selfDescription: '',
-    hasReadRecruitPost: 'no',
+    hasReadRecruitPost: 'familiar_no_need',
     careerPlan: '',
     referralSource: '',
   });
@@ -67,7 +75,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
       setValidationError(true);
       return;
     }
-    onSubmit(formData);
+    onSubmit({ ...formData, identity: gradeToIdentity(formData.gradeOrLevel) });
   };
 
   return (
@@ -107,7 +115,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
               <input
                 type="text"
                 name="wechat"
-                placeholder="WeChat ID"
+                placeholder={(t as any).wechatPlaceholder || 'WeChat ID'}
                 value={formData.wechat}
                 onChange={handleChange}
                 className="w-full px-5 py-3 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-tsinghua-100 outline-none bg-gray-50/50 font-medium"
@@ -132,26 +140,8 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
             />
           </div>
 
-          {/* Identity + School */}
+          {/* School + Department */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-xs font-black text-gray-400 uppercase mb-2">
-                {t.identity} <span className="text-red-400">*</span>
-              </label>
-              <select
-                name="identity"
-                value={formData.identity}
-                onChange={handleChange}
-                className="w-full px-5 py-3 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-tsinghua-100 outline-none bg-gray-50/50 font-black"
-                required
-              >
-                {identityKeys.map((key) => (
-                  <option key={key} value={key}>
-                    {(t.identityOptions as any)[key]}
-                  </option>
-                ))}
-              </select>
-            </div>
             <div>
               <label className="block text-xs font-black text-gray-400 uppercase mb-2">
                 {(t as any).school} <span className="text-red-400">*</span>
@@ -166,10 +156,6 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
                 required
               />
             </div>
-          </div>
-
-          {/* Department + Major */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-xs font-black text-gray-400 uppercase mb-2">
                 {(t as any).department} <span className="text-red-400">*</span>
@@ -184,6 +170,10 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
                 required
               />
             </div>
+          </div>
+
+          {/* Major + Grade */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-xs font-black text-gray-400 uppercase mb-2">
                 {t.major} <span className="text-red-400">*</span>
@@ -198,10 +188,6 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
                 required
               />
             </div>
-          </div>
-
-          {/* Grade (dropdown) + Phone */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-xs font-black text-gray-400 uppercase mb-2">
                 {(t as any).gradeLevel} <span className="text-red-400">*</span>
@@ -221,6 +207,10 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Phone + Email */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-xs font-black text-gray-400 uppercase mb-2">
                 {t.phone} <span className="text-red-400">*</span>
@@ -235,22 +225,20 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
                 required
               />
             </div>
-          </div>
-
-          {/* Email */}
-          <div>
-            <label className="block text-xs font-black text-gray-400 uppercase mb-2">
-              {t.email} <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="email"
-              name="email"
-              placeholder={(t as any).emailPlaceholder}
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full px-5 py-3 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-tsinghua-100 outline-none bg-gray-50/50 font-medium"
-              required
-            />
+            <div>
+              <label className="block text-xs font-black text-gray-400 uppercase mb-2">
+                {t.email} <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="email"
+                name="email"
+                placeholder={(t as any).emailPlaceholder}
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full px-5 py-3 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-tsinghua-100 outline-none bg-gray-50/50 font-medium"
+                required
+              />
+            </div>
           </div>
 
           {/* Has Read Recruit Post */}
@@ -273,8 +261,8 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
               onChange={handleChange}
               className="w-full px-5 py-3 border border-blue-100 rounded-2xl focus:ring-4 focus:ring-blue-100 outline-none bg-white font-black"
             >
-              <option value="no">{(t as any).readPostNo}</option>
               <option value="yes">{(t as any).readPostYes}</option>
+              <option value="familiar_no_need">{(t as any).readPostNo}</option>
             </select>
           </div>
 
@@ -413,7 +401,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
                 className="w-6 h-6 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
               />
               <span className="text-sm font-bold text-gray-700 group-hover:text-tsinghua-600 transition">
-                {t.willingness} ({t.willingnessNote}) <span className="text-red-400">*</span>
+                {t.willingness} <span className="text-red-400">*</span>
               </span>
             </label>
             <label className="flex items-center gap-4 cursor-pointer group">

@@ -140,7 +140,7 @@ export function generateMockCandidateInfo(): CandidateBasicInfo {
     homeworkWillingness: Math.random() > 0.1,
     leaderWillingness: Math.random() > 0.5,
     selfDescription: pick(SELF_DESCRIPTIONS),
-    hasReadRecruitPost: Math.random() > 0.3 ? 'yes' : 'no',
+    hasReadRecruitPost: Math.random() > 0.3 ? 'yes' : 'familiar_no_need',
     careerPlan: pick(CAREER_PLANS),
     referralSource: pick(REFERRAL_SOURCES),
   };

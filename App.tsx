@@ -20,6 +20,7 @@ import { EXAMPLE_CANDIDATES, isExampleCandidate } from './data/exampleCandidates
 import { EXAMPLE_QUESTIONS, isExampleQuestion } from './data/exampleQuestions';
 import { DEFAULT_API_CONFIG, getProviderConfig } from './services/llmService';
 import { createBaselineIfNeeded } from './services/backupService';
+import { supabase, isSupabaseConfigured } from './services/supabaseClient';
 import { initAdaptiveState, getNextQuestion, updateConfidence, shouldContinue, getDimensionSummary } from './services/adaptiveQuestionEngine';
 import { createInitialProfile, updateLiveProfile, calculateProbingBias } from './services/candidateProfiler';
 import ApiSettings from './components/ApiSettings';
@@ -560,13 +561,24 @@ const App: React.FC = () => {
   const [openEndedResponse, setOpenEndedResponse] = useState<OpenEndedResponse | null>(null);
   // Interview suspend/resume — tracks session when user navigates away mid-interview
   const [suspendedSession, setSuspendedSession] = useState<InterviewSession | null>(null);
-  // Help widget config — editable by admin
+  // Help widget config — editable by admin, synced to Supabase
   const [helpConfig, setHelpConfig] = useState<HelpWidgetConfig>(() => {
     try {
       const raw = localStorage.getItem('tsinghua_help_config');
       return raw ? JSON.parse(raw) : { contactEmail: '', businessHours: '', extraNote: '' };
     } catch { return { contactEmail: '', businessHours: '', extraNote: '' }; }
   });
+  // Fetch help config from Supabase on mount
+  useEffect(() => {
+    if (!isSupabaseConfigured() || !supabase) return;
+    supabase.from('help_config').select('*').eq('id', 'default').single().then(({ data }) => {
+      if (data) {
+        const cfg: HelpWidgetConfig = { contactEmail: data.contact_email || '', businessHours: data.business_hours || '', extraNote: data.extra_note || '' };
+        setHelpConfig(cfg);
+        localStorage.setItem('tsinghua_help_config', JSON.stringify(cfg));
+      }
+    });
+  }, []);
 
   // Merge example candidates (read-only) with real candidates for display
   const allCandidates = useMemo(() => [...EXAMPLE_CANDIDATES, ...candidates], [candidates]);
@@ -1460,7 +1472,15 @@ const App: React.FC = () => {
       )}
       {/* Help Widget — admin pages (editable) */}
       {isAuthenticated && (stage === AppStage.ADMIN_LIBRARY || stage === AppStage.ADMIN_QUESTIONS || stage === AppStage.ADMIN_CRITERIA || stage === AppStage.ADMIN_PROMPTS || stage === AppStage.ADMIN_QUICK_PREVIEW) && (
-        <HelpWidget config={helpConfig} lang={lang} isAdmin onSave={(cfg) => { setHelpConfig(cfg); localStorage.setItem('tsinghua_help_config', JSON.stringify(cfg)); }} />
+        <HelpWidget config={helpConfig} lang={lang} isAdmin onSave={(cfg) => {
+          setHelpConfig(cfg);
+          localStorage.setItem('tsinghua_help_config', JSON.stringify(cfg));
+          if (isSupabaseConfigured() && supabase) {
+            supabase.from('help_config').upsert({ id: 'default', contact_email: cfg.contactEmail, business_hours: cfg.businessHours, extra_note: cfg.extraNote }).then(({ error }) => {
+              if (error) console.warn('[Supabase] Help config sync failed:', error.message);
+            });
+          }
+        }} />
       )}
     </div>
   );

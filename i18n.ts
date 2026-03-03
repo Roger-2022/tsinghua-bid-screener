@@ -437,7 +437,7 @@ export const translations = {
     resultSaveInfo: "保存修改",
     resultConfirmSubmit: "确认无误，提交",
     resultInterviewDone: "评估已完成",
-    resultInterviewDoneDesc: "感谢您参与商业模式工坊招生评估。您的申请已进入审核队列，我们将通过邮件或微信通知您后续安排。",
+    resultInterviewDoneDesc: "感谢您参与商业模式工坊招生评估。您的申请已进入审核队列，我们将通过邮件、微信或短信等方式通知您后续安排。",
     resultContactUs: "如有疑问，请联系",
     // Help Widget
     helpTitle: "需要帮助？",
@@ -886,7 +886,7 @@ export const translations = {
     resultSaveInfo: "Save Changes",
     resultConfirmSubmit: "Confirm & Submit",
     resultInterviewDone: "Assessment Complete",
-    resultInterviewDoneDesc: "Thank you for participating in the Business Model Workshop assessment. Your application is now under review. We will notify you via email or WeChat.",
+    resultInterviewDoneDesc: "Thank you for participating in the Business Model Workshop assessment. Your application is now under review. We will notify you via email, WeChat, or SMS.",
     resultContactUs: "For questions, contact",
     // Help Widget
     helpTitle: "Need Help?",

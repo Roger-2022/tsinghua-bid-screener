@@ -276,12 +276,6 @@ const ResultView: React.FC<Props> = ({ record, isAdmin = false, lang, isEditing 
             </p>
           </div>
 
-          <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
-            <p className="text-sm text-gray-500">
-              {(t as any).resultContactUs}
-            </p>
-          </div>
-
           <button
             onClick={onBackHome}
             className="px-12 py-3 bg-gray-900 text-white font-bold rounded-full hover:bg-black transition-all shadow-lg active:scale-95"

@@ -18,6 +18,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
     status_badge_text_zh: '示范',
     profile: {
       name: '张明远',
+      gender: 'male',
       identity: 'MBA',
       school: '清华大学',
       department: '经管学院',
@@ -98,6 +99,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
     status_badge_text_zh: '示范',
     profile: {
       name: '林思齐',
+      gender: 'female',
       identity: 'Undergraduate',
       school: '北京大学',
       department: '光华管理学院',
@@ -179,6 +181,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
     status_badge_text_zh: '通过',
     profile: {
       name: '王浩然',
+      gender: 'male',
       identity: 'Master',
       school: '清华大学',
       department: '经管学院',
@@ -259,6 +262,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
     status_badge_text_zh: '通过',
     profile: {
       name: '陈雨晴',
+      gender: 'female',
       identity: 'MBA',
       school: '北京大学',
       department: '光华管理学院',
@@ -339,6 +343,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
     status_badge_text_zh: '通过',
     profile: {
       name: '赵子轩',
+      gender: 'male',
       identity: 'Undergraduate',
       school: '清华大学',
       department: '工业工程系',
@@ -420,6 +425,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
     status_badge_text_zh: '待定',
     profile: {
       name: '刘佳欣',
+      gender: 'female',
       identity: 'Master',
       school: '北京大学',
       department: '国家发展研究院',
@@ -500,6 +506,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
     status_badge_text_zh: '待定',
     profile: {
       name: '孙梓涵',
+      gender: 'female',
       identity: 'Employee',
       school: '清华大学',
       department: '计算机系',
@@ -580,6 +587,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
     status_badge_text_zh: '待定',
     profile: {
       name: '周星宇',
+      gender: 'male',
       identity: 'Undergraduate',
       school: '北京大学',
       department: '经济学院',
@@ -661,6 +669,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
     status_badge_text_zh: '淘汰',
     profile: {
       name: '吴明辉',
+      gender: 'male',
       identity: 'Employee',
       school: '清华大学',
       department: '经管学院',
@@ -741,6 +750,7 @@ export const EXAMPLE_CANDIDATES: CandidateRecord[] = [
     status_badge_text_zh: '淘汰',
     profile: {
       name: '黄雅琪',
+      gender: 'female',
       identity: 'Undergraduate',
       school: '北京大学',
       department: '元培学院',

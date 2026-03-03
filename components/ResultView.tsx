@@ -246,6 +246,7 @@ const ResultView: React.FC<Props> = ({ record, isAdmin = false, lang, isEditing 
 
   const infoFields: { label: string; value: string }[] = candidateInfo ? [
     { label: isCN ? '姓名' : 'Name', value: (editData || candidateInfo).name },
+    { label: isCN ? '性别' : 'Gender', value: (editData || candidateInfo).gender === 'male' ? (isCN ? '男' : 'Male') : (isCN ? '女' : 'Female') },
     { label: isCN ? '微信号' : 'WeChat', value: (editData || candidateInfo).wechat },
     { label: isCN ? '学校' : 'School', value: (editData || candidateInfo).school },
     { label: isCN ? '院系' : 'Department', value: (editData || candidateInfo).department },

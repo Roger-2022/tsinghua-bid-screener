@@ -34,6 +34,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
 
   const [formData, setFormData] = useState<CandidateBasicInfo>(initialData || {
     name: '',
+    gender: 'male',
     wechat: '',
     identity: 'Undergraduate',
     school: '',
@@ -92,8 +93,8 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Name + WeChat */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Name + Gender + WeChat */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-xs font-black text-gray-400 uppercase mb-2">
                 {t.name} <span className="text-red-400">*</span>
@@ -107,6 +108,21 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
                 className="w-full px-5 py-3 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-tsinghua-100 outline-none bg-gray-50/50 font-medium"
                 required
               />
+            </div>
+            <div>
+              <label className="block text-xs font-black text-gray-400 uppercase mb-2">
+                {(t as any).gender} <span className="text-red-400">*</span>
+              </label>
+              <select
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                className="w-full px-5 py-3 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-tsinghua-100 outline-none bg-gray-50/50 font-black"
+                required
+              >
+                <option value="male">{(t as any).genderOptions?.male}</option>
+                <option value="female">{(t as any).genderOptions?.female}</option>
+              </select>
             </div>
             <div>
               <label className="block text-xs font-black text-gray-400 uppercase mb-2">

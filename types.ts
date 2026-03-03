@@ -27,6 +27,7 @@ export interface Message {
 // ========== Candidate Basic Info ==========
 export interface CandidateBasicInfo {
   name: string;
+  gender: 'male' | 'female';
   wechat: string;
   identity: 'Undergraduate' | 'Master' | 'MBA' | 'PhD';
   school: string;
@@ -475,6 +476,7 @@ E，暂停参与，1
 // ========== Candidate Record ==========
 export interface CandidateProfile {
   name: string;
+  gender: string;
   identity: string;
   school: string;
   department: string;
@@ -587,6 +589,7 @@ export interface ImportSummary {
 export const EXPORT_COLUMNS = [
   { key: 'candidate_id',      zh: '编号',              en: 'ID' },
   { key: 'name',              zh: '姓名',              en: 'Name' },
+  { key: 'gender',            zh: '性别',              en: 'Gender' },
   { key: 'wechat_id',         zh: '微信号',            en: 'WeChat ID' },
   { key: 'phone',             zh: '电话',              en: 'Phone' },
   { key: 'email',             zh: '邮箱',              en: 'Email' },
@@ -630,7 +633,7 @@ export const EXPORT_COLUMNS = [
 
 // ========== Export Column Groups (逻辑分组) ==========
 export const EXPORT_COLUMN_GROUPS = [
-  { id: 'basic', zh: '基本信息', en: 'Basic Information', keys: ['candidate_id', 'name', 'identity', 'school', 'department', 'major_title', 'grade_level', 'self_description', 'past_projects', 'has_read_recruit_post', 'career_plan', 'referral_source'] },
+  { id: 'basic', zh: '基本信息', en: 'Basic Information', keys: ['candidate_id', 'name', 'gender', 'identity', 'school', 'department', 'major_title', 'grade_level', 'self_description', 'past_projects', 'has_read_recruit_post', 'career_plan', 'referral_source'] },
   { id: 'contact', zh: '联系方式', en: 'Contact Information', keys: ['wechat_id', 'phone', 'email'] },
   { id: 'availability', zh: '参与意愿', en: 'Availability & Willingness', keys: ['weekly_h1', 'weekly_h2', 'offline_interview', 'homework', 'leader'] },
   { id: 'scores', zh: '评分维度', en: 'Score Dimensions', keys: ['s_motivation', 's_logic', 's_resilience', 's_innovation', 's_commitment', 's_thinking_depth', 's_multidim_thinking', 's_overall'] },

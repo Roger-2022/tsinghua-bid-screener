@@ -1110,6 +1110,7 @@ const App: React.FC = () => {
         status_badge_text_zh: result.status_badge_text_zh || '待定',
         profile: {
           name: candidateInfo!.name,
+          gender: candidateInfo!.gender,
           identity: candidateInfo!.identity,
           school: candidateInfo!.school,
           department: candidateInfo!.department,

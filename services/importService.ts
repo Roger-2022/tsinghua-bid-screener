@@ -233,6 +233,7 @@ const mapRowToRecord = (row: any, index: number, errors: string[]): CandidateRec
       status_badge_text_zh: status === 'pass' ? '通过' : status === 'hold' ? '待定' : '拒绝',
       profile: {
         name,
+        gender: row.gender || 'male',
         identity: (row.identity || '其他') as any,
         school: row.school || row.school_org || '',
         department: row.department || '',

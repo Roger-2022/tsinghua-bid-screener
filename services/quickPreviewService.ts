@@ -125,6 +125,7 @@ export function generateMockCandidateInfo(): CandidateBasicInfo {
 
   return {
     name,
+    gender: Math.random() > 0.5 ? 'male' : 'female' as const,
     wechat: pinyin,
     identity,
     school: schoolInfo.school,

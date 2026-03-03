@@ -104,6 +104,7 @@ const AdminQuickPreview: React.FC<Props> = ({
         status_badge_text_zh: aiResult.status_badge_text_zh || '待定',
         profile: {
           name: candidateInfo.name,
+          gender: candidateInfo.gender,
           identity: candidateInfo.identity,
           school: candidateInfo.school,
           department: candidateInfo.department,

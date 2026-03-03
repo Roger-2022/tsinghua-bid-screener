@@ -162,6 +162,7 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
       status_badge_text_zh: '待定',
       profile: {
         name: '新候选人',
+        gender: 'male',
         identity: '其他',
         school: '',
         department: '',
@@ -389,7 +390,7 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
                     </span>
                   </div>
                   <p className="text-[11px] text-gray-500 truncate">
-                    {c.profile.school + ' ' + (c.profile.department || '') || (isCN ? '未填写' : 'N/A')} &middot; {c.profile.identity}
+                    {c.profile.gender === 'male' ? (isCN ? '男' : 'M') : c.profile.gender === 'female' ? (isCN ? '女' : 'F') : ''} &middot; {c.profile.school + ' ' + (c.profile.department || '') || (isCN ? '未填写' : 'N/A')} &middot; {c.profile.identity}
                   </p>
                   <div className="flex flex-wrap gap-1 mt-1.5">
                     {c.admin_record.search_keywords.slice(0, 3).map((kw, i) => (
@@ -780,7 +781,7 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
                         {isCN ? '身份与学校' : 'Identity & School'}
                       </p>
                       <p className="font-medium">
-                        {currentRecord.profile.identity} &middot;{' '}
+                        {currentRecord.profile.gender === 'male' ? (isCN ? '男' : 'M') : currentRecord.profile.gender === 'female' ? (isCN ? '女' : 'F') : ''} &middot; {currentRecord.profile.identity} &middot;{' '}
                         {currentRecord.profile.school || (isCN ? '未录入' : 'N/A')} {currentRecord.profile.department || ''}
                       </p>
                     </div>

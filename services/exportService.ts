@@ -28,6 +28,7 @@ const buildMapping = (c: CandidateRecord): Record<string, any> => {
   return {
     candidate_id: isExample ? `${c.candidate_id} [示例]` : c.candidate_id,
     name: isExample ? `${p.name} [示例]` : p.name,
+    gender: p.gender === 'male' ? '男' : p.gender === 'female' ? '女' : p.gender || '',
     wechat_id: p.wechat_id,
     phone: p.phone,
     email: p.email,
@@ -123,6 +124,7 @@ export const downloadCSVTemplate = (): void => {
   const sampleValues: Record<string, string> = {
     candidate_id: 'ID001',
     name: '张三',
+    gender: '男',
     wechat_id: 'zhangsan_wx',
     phone: '13800138000',
     email: 'zhangsan@example.com',

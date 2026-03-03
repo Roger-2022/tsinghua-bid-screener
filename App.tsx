@@ -633,48 +633,42 @@ const App: React.FC = () => {
     }
   }, [authUser]);
 
-  // Load all admin configs from Supabase on startup (cloud settings override localStorage)
+  // Sync admin configs: cloud → local (if cloud has data) or local → cloud (initial seed)
   useEffect(() => {
-    fetchAllSettings([
-      'api_config', 'questions', 'dimension_weights', 'decision_thresholds',
-      'prompt_config', 'decision_tree', 'probing_strategy', 'workflow_modules',
-      'question_count_config',
-    ]).then(cloud => {
-      if (cloud.api_config) {
-        const cfg = cloud.api_config as ApiConfig;
-        if (cfg.apiKey) { setApiConfig(cfg); localStorage.setItem('tsinghua_api_config', JSON.stringify(cfg)); }
-      }
-      if (cloud.questions) {
-        const q = cloud.questions as QuestionTemplate[];
-        if (q.length) { setQuestions(q); localStorage.setItem('tsinghua_questions', JSON.stringify(q)); }
-      }
-      if (cloud.dimension_weights) {
-        const w = cloud.dimension_weights as DimensionWeight[];
-        if (w.length) { setDimensionWeights(w); localStorage.setItem('tsinghua_dimension_weights', JSON.stringify(w)); }
-      }
-      if (cloud.decision_thresholds) {
-        const t = cloud.decision_thresholds as NumericDecisionThresholds;
-        setDecisionThresholds(t); localStorage.setItem('tsinghua_decision_thresholds', JSON.stringify(t));
-      }
-      if (cloud.prompt_config) {
-        const p = cloud.prompt_config as PromptConfig;
-        setPromptConfig(p); localStorage.setItem('tsinghua_prompt_config', JSON.stringify(p));
-      }
-      if (cloud.decision_tree) {
-        const tree = cloud.decision_tree as DecisionTreeNode[];
-        if (tree.length) { setDecisionTree(tree); localStorage.setItem('tsinghua_decision_tree', JSON.stringify(tree)); }
-      }
-      if (cloud.probing_strategy) {
-        const s = cloud.probing_strategy as ProbingStrategyConfig;
-        setProbingStrategy(s); localStorage.setItem('tsinghua_probing_strategy', JSON.stringify(s));
-      }
-      if (cloud.workflow_modules) {
-        const m = cloud.workflow_modules as WorkflowModuleConfig[];
-        if (m.length) { setWorkflowModules(m); localStorage.setItem('tsinghua_workflow_modules', JSON.stringify(m)); }
-      }
-      if (cloud.question_count_config) {
-        const cfg = cloud.question_count_config as QuestionCountConfig;
-        setQuestionCountConfig(cfg); localStorage.setItem('tsinghua_question_count_config', JSON.stringify(cfg));
+    const SETTINGS_MAP: { cloudId: string; lsKey: string; apply: (v: unknown) => void; isValid?: (v: unknown) => boolean }[] = [
+      { cloudId: 'api_config', lsKey: 'tsinghua_api_config', apply: v => setApiConfig(v as ApiConfig), isValid: v => !!(v as ApiConfig)?.apiKey },
+      { cloudId: 'questions', lsKey: 'tsinghua_questions', apply: v => setQuestions(v as QuestionTemplate[]), isValid: v => Array.isArray(v) && (v as unknown[]).length > 0 },
+      { cloudId: 'dimension_weights', lsKey: 'tsinghua_dimension_weights', apply: v => setDimensionWeights(v as DimensionWeight[]), isValid: v => Array.isArray(v) && (v as unknown[]).length > 0 },
+      { cloudId: 'decision_thresholds', lsKey: 'tsinghua_decision_thresholds', apply: v => setDecisionThresholds(v as NumericDecisionThresholds) },
+      { cloudId: 'prompt_config', lsKey: 'tsinghua_prompt_config', apply: v => setPromptConfig(v as PromptConfig) },
+      { cloudId: 'decision_tree', lsKey: 'tsinghua_decision_tree', apply: v => setDecisionTree(v as DecisionTreeNode[]), isValid: v => Array.isArray(v) && (v as unknown[]).length > 0 },
+      { cloudId: 'probing_strategy', lsKey: 'tsinghua_probing_strategy', apply: v => setProbingStrategy(v as ProbingStrategyConfig) },
+      { cloudId: 'workflow_modules', lsKey: 'tsinghua_workflow_modules', apply: v => setWorkflowModules(v as WorkflowModuleConfig[]), isValid: v => Array.isArray(v) && (v as unknown[]).length > 0 },
+      { cloudId: 'question_count_config', lsKey: 'tsinghua_question_count_config', apply: v => setQuestionCountConfig(v as QuestionCountConfig) },
+    ];
+
+    fetchAllSettings(SETTINGS_MAP.map(s => s.cloudId)).then(cloud => {
+      for (const entry of SETTINGS_MAP) {
+        const cloudVal = cloud[entry.cloudId];
+        const valid = entry.isValid ? entry.isValid(cloudVal) : !!cloudVal;
+
+        if (valid) {
+          // Cloud has data → use it (override local)
+          entry.apply(cloudVal);
+          localStorage.setItem(entry.lsKey, JSON.stringify(cloudVal));
+        } else {
+          // Cloud is empty → push local data up as initial seed
+          try {
+            const localRaw = localStorage.getItem(entry.lsKey);
+            if (localRaw) {
+              const localVal = JSON.parse(localRaw);
+              const localValid = entry.isValid ? entry.isValid(localVal) : !!localVal;
+              if (localValid) {
+                saveSetting(entry.cloudId, localVal);
+              }
+            }
+          } catch { /* ignore parse errors */ }
+        }
       }
     });
   }, []);

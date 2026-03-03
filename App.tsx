@@ -554,7 +554,20 @@ const App: React.FC = () => {
   });
   // Open-ended analysis state
   const [openEndedQuestions, setOpenEndedQuestions] = useState<OpenEndedQuestion[]>(() => {
-    try { const s = localStorage.getItem('tsinghua_open_ended_questions'); if (s) return JSON.parse(s); } catch {}
+    try {
+      const s = localStorage.getItem('tsinghua_open_ended_questions');
+      if (s) {
+        const parsed: OpenEndedQuestion[] = JSON.parse(s);
+        // Migration: old 15-question pool → new 3-question pool. Clear stale cache.
+        const newIds = DEFAULT_OPEN_ENDED_QUESTIONS.map(q => q.id);
+        const hasOldQuestions = parsed.some(q => !newIds.includes(q.id));
+        if (hasOldQuestions) {
+          localStorage.removeItem('tsinghua_open_ended_questions');
+          return DEFAULT_OPEN_ENDED_QUESTIONS;
+        }
+        return parsed;
+      }
+    } catch {}
     return DEFAULT_OPEN_ENDED_QUESTIONS;
   });
   const [selectedOpenEndedQuestion, setSelectedOpenEndedQuestion] = useState<OpenEndedQuestion | null>(null);

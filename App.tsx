@@ -27,7 +27,7 @@ import ApiSettings from './components/ApiSettings';
 import AdminQuickPreview from './components/AdminQuickPreview';
 import { signOut, getSession, onAuthStateChange, AuthUser } from './services/authService';
 import { insertCandidate, fetchCandidates, upsertCandidates } from './services/candidateService';
-import { fetchApiConfig, saveApiConfig } from './services/settingsService';
+import { fetchApiConfig, saveApiConfig, saveSetting, fetchAllSettings } from './services/settingsService';
 
 const DEFAULT_PROMPT_TEMPLATE = `一、角色定位
 你是 BID 商业模式工坊的招生筛选官。你的任务是生成高质量的筛选问题，用于评估申请者是否具备参与高强度商业模式训练的潜质。
@@ -633,12 +633,48 @@ const App: React.FC = () => {
     }
   }, [authUser]);
 
-  // Load API config from Supabase on startup (cloud settings override localStorage)
+  // Load all admin configs from Supabase on startup (cloud settings override localStorage)
   useEffect(() => {
-    fetchApiConfig().then(cloudConfig => {
-      if (cloudConfig && cloudConfig.apiKey) {
-        setApiConfig(cloudConfig);
-        localStorage.setItem('tsinghua_api_config', JSON.stringify(cloudConfig));
+    fetchAllSettings([
+      'api_config', 'questions', 'dimension_weights', 'decision_thresholds',
+      'prompt_config', 'decision_tree', 'probing_strategy', 'workflow_modules',
+      'question_count_config',
+    ]).then(cloud => {
+      if (cloud.api_config) {
+        const cfg = cloud.api_config as ApiConfig;
+        if (cfg.apiKey) { setApiConfig(cfg); localStorage.setItem('tsinghua_api_config', JSON.stringify(cfg)); }
+      }
+      if (cloud.questions) {
+        const q = cloud.questions as QuestionTemplate[];
+        if (q.length) { setQuestions(q); localStorage.setItem('tsinghua_questions', JSON.stringify(q)); }
+      }
+      if (cloud.dimension_weights) {
+        const w = cloud.dimension_weights as DimensionWeight[];
+        if (w.length) { setDimensionWeights(w); localStorage.setItem('tsinghua_dimension_weights', JSON.stringify(w)); }
+      }
+      if (cloud.decision_thresholds) {
+        const t = cloud.decision_thresholds as NumericDecisionThresholds;
+        setDecisionThresholds(t); localStorage.setItem('tsinghua_decision_thresholds', JSON.stringify(t));
+      }
+      if (cloud.prompt_config) {
+        const p = cloud.prompt_config as PromptConfig;
+        setPromptConfig(p); localStorage.setItem('tsinghua_prompt_config', JSON.stringify(p));
+      }
+      if (cloud.decision_tree) {
+        const tree = cloud.decision_tree as DecisionTreeNode[];
+        if (tree.length) { setDecisionTree(tree); localStorage.setItem('tsinghua_decision_tree', JSON.stringify(tree)); }
+      }
+      if (cloud.probing_strategy) {
+        const s = cloud.probing_strategy as ProbingStrategyConfig;
+        setProbingStrategy(s); localStorage.setItem('tsinghua_probing_strategy', JSON.stringify(s));
+      }
+      if (cloud.workflow_modules) {
+        const m = cloud.workflow_modules as WorkflowModuleConfig[];
+        if (m.length) { setWorkflowModules(m); localStorage.setItem('tsinghua_workflow_modules', JSON.stringify(m)); }
+      }
+      if (cloud.question_count_config) {
+        const cfg = cloud.question_count_config as QuestionCountConfig;
+        setQuestionCountConfig(cfg); localStorage.setItem('tsinghua_question_count_config', JSON.stringify(cfg));
       }
     });
   }, []);
@@ -1182,14 +1218,14 @@ const App: React.FC = () => {
   };
 
   const updateCandidates = (list: CandidateRecord[]) => { const realOnly = list.filter(c => !isExampleCandidate(c.candidate_id)); setCandidates(realOnly); upsertCandidates(realOnly); };
-  const handleUpdateWeights = (w: DimensionWeight[]) => { setDimensionWeights(w); localStorage.setItem('tsinghua_dimension_weights', JSON.stringify(w)); };
-  const handleUpdateThresholds = (t: NumericDecisionThresholds) => { setDecisionThresholds(t); localStorage.setItem('tsinghua_decision_thresholds', JSON.stringify(t)); };
-  const handleUpdateQuestions = (q: QuestionTemplate[]) => { const realOnly = q.filter(q => !isExampleQuestion(q.id)); setQuestions(realOnly); localStorage.setItem('tsinghua_questions', JSON.stringify(realOnly)); };
-  const handleUpdatePrompt = (p: PromptConfig) => { setPromptConfig(p); localStorage.setItem('tsinghua_prompt_config', JSON.stringify(p)); };
-  const handleUpdateDecisionTree = (tree: DecisionTreeNode[]) => { setDecisionTree(tree); localStorage.setItem('tsinghua_decision_tree', JSON.stringify(tree)); };
-  const handleUpdateProbingStrategy = (s: ProbingStrategyConfig) => { setProbingStrategy(s); localStorage.setItem('tsinghua_probing_strategy', JSON.stringify(s)); };
-  const handleUpdateWorkflowModules = (m: WorkflowModuleConfig[]) => { setWorkflowModules(m); localStorage.setItem('tsinghua_workflow_modules', JSON.stringify(m)); };
-  const handleUpdateQuestionCountConfig = (cfg: QuestionCountConfig) => { setQuestionCountConfig(cfg); localStorage.setItem('tsinghua_question_count_config', JSON.stringify(cfg)); };
+  const handleUpdateWeights = (w: DimensionWeight[]) => { setDimensionWeights(w); localStorage.setItem('tsinghua_dimension_weights', JSON.stringify(w)); saveSetting('dimension_weights', w); };
+  const handleUpdateThresholds = (t: NumericDecisionThresholds) => { setDecisionThresholds(t); localStorage.setItem('tsinghua_decision_thresholds', JSON.stringify(t)); saveSetting('decision_thresholds', t); };
+  const handleUpdateQuestions = (q: QuestionTemplate[]) => { const realOnly = q.filter(q => !isExampleQuestion(q.id)); setQuestions(realOnly); localStorage.setItem('tsinghua_questions', JSON.stringify(realOnly)); saveSetting('questions', realOnly); };
+  const handleUpdatePrompt = (p: PromptConfig) => { setPromptConfig(p); localStorage.setItem('tsinghua_prompt_config', JSON.stringify(p)); saveSetting('prompt_config', p); };
+  const handleUpdateDecisionTree = (tree: DecisionTreeNode[]) => { setDecisionTree(tree); localStorage.setItem('tsinghua_decision_tree', JSON.stringify(tree)); saveSetting('decision_tree', tree); };
+  const handleUpdateProbingStrategy = (s: ProbingStrategyConfig) => { setProbingStrategy(s); localStorage.setItem('tsinghua_probing_strategy', JSON.stringify(s)); saveSetting('probing_strategy', s); };
+  const handleUpdateWorkflowModules = (m: WorkflowModuleConfig[]) => { setWorkflowModules(m); localStorage.setItem('tsinghua_workflow_modules', JSON.stringify(m)); saveSetting('workflow_modules', m); };
+  const handleUpdateQuestionCountConfig = (cfg: QuestionCountConfig) => { setQuestionCountConfig(cfg); localStorage.setItem('tsinghua_question_count_config', JSON.stringify(cfg)); saveSetting('question_count_config', cfg); };
   const handleUpdateApiConfig = (cfg: ApiConfig) => { setApiConfig(cfg); localStorage.setItem('tsinghua_api_config', JSON.stringify(cfg)); saveApiConfig(cfg); };
   const handleQuickPreviewCandidateCreated = (record: CandidateRecord) => { const updated = [...candidates, record]; setCandidates(updated); insertCandidate(record); };
 

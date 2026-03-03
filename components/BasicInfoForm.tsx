@@ -265,14 +265,18 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData, recruitPo
                 {(t as any).hasReadRecruitPost} <span className="text-red-400">*</span>
               </label>
               {recruitPostUrl ? (
-                <a
-                  href={recruitPostUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => {
+                    const msg = lang === 'CN'
+                      ? `请复制以下链接到浏览器打开：\n\n${recruitPostUrl}`
+                      : `Please copy the link below and open in your browser:\n\n${recruitPostUrl}`;
+                    window.prompt(msg, recruitPostUrl);
+                  }}
                   className="text-xs font-bold text-tsinghua-600 hover:text-tsinghua-800 underline"
                 >
                   {(t as any).hasReadRecruitPostLink}
-                </a>
+                </button>
               ) : (
                 <span className="text-xs text-gray-400">{(t as any).hasReadRecruitPostLink}</span>
               )}

@@ -1461,11 +1461,6 @@ const App: React.FC = () => {
       {/* AI Native: Backup Manager */}
       <BackupManager lang={lang} isOpen={showBackupManager} onClose={() => setShowBackupManager(false)} />
 
-      {/* AI Native: Admin AI Assistant (visible in admin modes) */}
-      {isAuthenticated && (stage === AppStage.ADMIN_LIBRARY || stage === AppStage.ADMIN_QUESTIONS || stage === AppStage.ADMIN_CRITERIA || stage === AppStage.ADMIN_PROMPTS || stage === AppStage.ADMIN_QUICK_PREVIEW) && (
-        <AdminAIAssistant lang={lang} candidates={allCandidates} />
-      )}
-
       {/* Help Widget — user-facing pages (read-only) */}
       {(!isAuthenticated || [AppStage.WELCOME, AppStage.BASIC_FORM, AppStage.INTERVIEW_QUESTIONNAIRE, AppStage.OPEN_ENDED_ANALYSIS, AppStage.ANALYZING, AppStage.RESULT].includes(stage)) && (
         <HelpWidget config={helpConfig} lang={lang} />

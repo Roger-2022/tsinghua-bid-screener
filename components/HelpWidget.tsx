@@ -13,9 +13,12 @@ const HelpWidget: React.FC<Props> = ({ config, lang, isAdmin = false, onSave }) 
   const t = translations[lang];
   const [open, setOpen] = useState(false);
   const [editConfig, setEditConfig] = useState<HelpWidgetConfig>(config);
+  const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
     if (onSave) onSave(editConfig);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   };
 
   return (
@@ -96,12 +99,19 @@ const HelpWidget: React.FC<Props> = ({ config, lang, isAdmin = false, onSave }) 
 
             {/* Admin Save Button */}
             {isAdmin && (
-              <button
-                onClick={handleSave}
-                className="w-full py-2 bg-tsinghua-600 text-white font-bold rounded-xl hover:bg-tsinghua-700 transition text-sm"
-              >
-                {(t as any).helpSave}
-              </button>
+              <>
+                {saved && (
+                  <div className="py-2 px-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-xs font-bold text-center">
+                    {lang === 'CN' ? '已保存' : 'Saved'}
+                  </div>
+                )}
+                <button
+                  onClick={handleSave}
+                  className="w-full py-2 bg-tsinghua-600 text-white font-bold rounded-xl hover:bg-tsinghua-700 transition text-sm"
+                >
+                  {(t as any).helpSave}
+                </button>
+              </>
             )}
           </div>
         </div>

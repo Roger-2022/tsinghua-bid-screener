@@ -204,7 +204,7 @@ const runProfileGeneration = async (
   const userPrompt = `请基于候选人分数和信息，撰写中英文画像。
 
 ### 候选人信息
-姓名: ${info.name}, 身份: ${info.identity}, 学校/单位: ${info.schoolOrUnit}, 专业: ${info.major}
+姓名: ${info.name}, 身份: ${info.identity}, 学校: ${info.school} ${info.department}, 专业: ${info.major}
 自述: ${info.selfDescription}
 过往项目: ${info.projects}
 
@@ -388,7 +388,7 @@ const runOpenEndedScoring = async (
   const contextText = q.context_zh || q.context_en;
   const questionText = q.question_zh || q.question_en;
 
-  const userPrompt = `候选人信息：${info.name}，身份：${info.identity}，学校/单位：${info.schoolOrUnit || ''}
+  const userPrompt = `候选人信息：${info.name}，身份：${info.identity}，学校：${info.school || ''} ${info.department || ''}
 
 分析题目背景：${contextText}
 

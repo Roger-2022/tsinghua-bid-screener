@@ -18,6 +18,7 @@ const STATE_KEYS = [
   'tsinghua_api_config',
   'tsinghua_feedback',
   'tsinghua_prompt_versions',
+  'tsinghua_help_config',
 ] as const;
 
 export const createSnapshot = async (label: string): Promise<SystemSnapshot> => {

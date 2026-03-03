@@ -1,5 +1,5 @@
-import React from 'react';
-import { CandidateRecord, Language } from '../types';
+import React, { useState } from 'react';
+import { CandidateRecord, CandidateBasicInfo, Language } from '../types';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { translations } from '../i18n';
 
@@ -10,22 +10,16 @@ interface Props {
   isEditing?: boolean;
   onEditChange?: (data: CandidateRecord) => void;
   onBackHome?: () => void;
+  candidateInfo?: CandidateBasicInfo;
+  onUpdateCandidateInfo?: (info: CandidateBasicInfo) => void;
 }
 
-const ResultView: React.FC<Props> = ({ record, isAdmin = false, lang, isEditing = false, onEditChange, onBackHome }) => {
+const ResultView: React.FC<Props> = ({ record, isAdmin = false, lang, isEditing = false, onEditChange, onBackHome, candidateInfo, onUpdateCandidateInfo }) => {
   const t = translations[lang];
   const isCN = lang === 'CN';
 
   const content = isCN ? record.decision_card.zh : record.decision_card.en;
   const decisionColor = record.status === 'pass' ? '#10b981' : record.status === 'reject' ? '#ef4444' : '#fbbf24';
-  const decisionBg = record.status === 'pass' ? 'bg-emerald-50' : record.status === 'reject' ? 'bg-red-50' : 'bg-amber-50';
-  const decisionBorder = record.status === 'pass' ? 'border-emerald-200' : record.status === 'reject' ? 'border-red-200' : 'border-amber-200';
-
-  const statusText = record.status === 'pass'
-    ? (t as any).resultStatusPass
-    : record.status === 'reject'
-      ? (t as any).resultStatusReject
-      : (t as any).resultStatusHold;
 
   // --- Admin full view (in talent pool) ---
   if (isAdmin) {
@@ -227,90 +221,184 @@ const ResultView: React.FC<Props> = ({ record, isAdmin = false, lang, isEditing 
     );
   }
 
-  // --- Candidate-facing simplified view: only status + brief summary ---
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 py-16">
-      <div className="max-w-lg w-full text-center space-y-8">
-        {/* Status Icon */}
-        <div className="flex justify-center">
-          <div className="w-24 h-24 rounded-full flex items-center justify-center shadow-lg" style={{ backgroundColor: decisionColor }}>
-            {record.status === 'pass' && (
+  // --- Candidate-facing: Two-step flow (info verification → completion) ---
+  const [step, setStep] = useState<'verify' | 'done'>('verify');
+  const [editMode, setEditMode] = useState(false);
+  const [editData, setEditData] = useState<CandidateBasicInfo | null>(candidateInfo || null);
+
+  const handleEditField = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    if (!editData) return;
+    const { name, value, type } = e.target as any;
+    const val = type === 'checkbox' ? (e.target as any).checked : value;
+    setEditData(prev => prev ? { ...prev, [name]: val } : null);
+  };
+
+  const handleSaveEdit = () => {
+    if (editData && onUpdateCandidateInfo) {
+      onUpdateCandidateInfo(editData);
+    }
+    setEditMode(false);
+  };
+
+  const handleConfirmSubmit = () => {
+    setStep('done');
+  };
+
+  const infoFields: { label: string; value: string }[] = candidateInfo ? [
+    { label: isCN ? '姓名' : 'Name', value: (editData || candidateInfo).name },
+    { label: isCN ? '微信号' : 'WeChat', value: (editData || candidateInfo).wechat },
+    { label: isCN ? '身份' : 'Identity', value: (t.identityOptions as any)[(editData || candidateInfo).identity] || (editData || candidateInfo).identity },
+    { label: isCN ? '学校' : 'School', value: (editData || candidateInfo).school },
+    { label: isCN ? '院系' : 'Department', value: (editData || candidateInfo).department },
+    { label: isCN ? '专业' : 'Major', value: (editData || candidateInfo).major },
+    { label: isCN ? '年级' : 'Grade', value: ((t as any).gradeOptions as any)?.[(editData || candidateInfo).gradeOrLevel] || (editData || candidateInfo).gradeOrLevel },
+    { label: isCN ? '电话' : 'Phone', value: (editData || candidateInfo).phone },
+    { label: isCN ? '邮箱' : 'Email', value: (editData || candidateInfo).email },
+    { label: isCN ? '三词自述' : 'Self Description', value: (editData || candidateInfo).selfDescription },
+  ] : [];
+
+  // Step 2 — Assessment Complete
+  if (step === 'done') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 py-16">
+        <div className="max-w-lg w-full text-center space-y-8">
+          {/* Success Icon */}
+          <div className="flex justify-center">
+            <div className="w-24 h-24 rounded-full flex items-center justify-center shadow-lg bg-emerald-500">
               <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-            )}
-            {record.status === 'hold' && (
-              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 8v4m0 4h.01" /></svg>
-            )}
-            {record.status === 'reject' && (
-              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+            </div>
+          </div>
+
+          <div>
+            <h1 className="text-3xl font-black text-gray-900 mb-3">{(t as any).resultInterviewDone}</h1>
+            <p className="text-gray-600 leading-relaxed text-sm">
+              {(t as any).resultInterviewDoneDesc}
+            </p>
+          </div>
+
+          <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+            <p className="text-sm text-gray-500">
+              {(t as any).resultContactUs}
+            </p>
+          </div>
+
+          <button
+            onClick={onBackHome}
+            className="px-12 py-3 bg-gray-900 text-white font-bold rounded-full hover:bg-black transition-all shadow-lg active:scale-95"
+          >
+            {t.backHome}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 1 — Info Verification
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 py-10">
+      <div className="max-w-2xl w-full space-y-8">
+        {/* Header */}
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center bg-tsinghua-100">
+              <svg className="w-8 h-8 text-tsinghua-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+          </div>
+          <h2 className="text-2xl font-black text-gray-900 mb-2">{(t as any).resultCheckInfo}</h2>
+        </div>
+
+        {/* Info Card */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="h-1.5 w-full bg-tsinghua-500"></div>
+          <div className="p-8">
+            {!editMode ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {infoFields.map((field, idx) => (
+                    <div key={idx} className="py-2">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">{field.label}</p>
+                      <p className="text-sm font-medium text-gray-800">{field.value || '-'}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={() => setEditMode(true)}
+                    className="px-6 py-2 text-sm font-bold text-tsinghua-600 border border-tsinghua-200 rounded-full hover:bg-tsinghua-50 transition"
+                  >
+                    {(t as any).resultEditInfo}
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Edit Mode: inline editable fields */
+              <div className="space-y-4">
+                {editData && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase">{isCN ? '姓名' : 'Name'}</label>
+                      <input type="text" name="name" value={editData.name} onChange={handleEditField} className="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-tsinghua-200" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase">{isCN ? '微信号' : 'WeChat'}</label>
+                      <input type="text" name="wechat" value={editData.wechat} onChange={handleEditField} className="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-tsinghua-200" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase">{isCN ? '学校' : 'School'}</label>
+                      <input type="text" name="school" value={editData.school} onChange={handleEditField} className="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-tsinghua-200" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase">{isCN ? '院系' : 'Department'}</label>
+                      <input type="text" name="department" value={editData.department} onChange={handleEditField} className="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-tsinghua-200" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase">{isCN ? '专业' : 'Major'}</label>
+                      <input type="text" name="major" value={editData.major} onChange={handleEditField} className="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-tsinghua-200" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase">{isCN ? '电话' : 'Phone'}</label>
+                      <input type="tel" name="phone" value={editData.phone} onChange={handleEditField} className="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-tsinghua-200" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase">{isCN ? '邮箱' : 'Email'}</label>
+                      <input type="email" name="email" value={editData.email} onChange={handleEditField} className="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-tsinghua-200" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase">{isCN ? '三词自述' : 'Self Description'}</label>
+                      <input type="text" name="selfDescription" value={editData.selfDescription} onChange={handleEditField} className="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-tsinghua-200" />
+                    </div>
+                  </div>
+                )}
+                <div className="flex justify-end gap-3 mt-4">
+                  <button
+                    onClick={() => { setEditMode(false); setEditData(candidateInfo || null); }}
+                    className="px-5 py-2 text-sm font-bold text-gray-500 border border-gray-200 rounded-full hover:bg-gray-50 transition"
+                  >
+                    {t.cancel}
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    className="px-5 py-2 text-sm font-bold text-white bg-tsinghua-600 rounded-full hover:bg-tsinghua-700 transition"
+                  >
+                    {(t as any).resultSaveInfo}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Status Text */}
-        <div>
-          <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">{(t as any).resultStatusLabel}</p>
-          <h1 className="text-4xl font-black" style={{ color: decisionColor }}>{statusText}</h1>
-        </div>
-
-        {/* Brief Summary Card */}
-        <div className={`${decisionBg} ${decisionBorder} border rounded-2xl p-6`}>
-          <p className="text-gray-700 leading-relaxed text-sm">
-            {content.summary || t.noSummary}
-          </p>
-        </div>
-
-        {/* AI Native: Personalized Explainability */}
-        {record.explainability && (record.explainability.strengths.length > 0 || record.explainability.growth_areas.length > 0) && (
-          <div className={`${decisionBg} ${decisionBorder} border rounded-2xl p-6 text-left space-y-5`}>
-            <h3 className="text-sm font-black text-gray-700 uppercase tracking-widest">{(t as any).explainability_title || (isCN ? '个性化反馈' : 'Personalized Feedback')}</h3>
-            {record.explainability.strengths.length > 0 && (
-              <div>
-                <h4 className="text-xs font-bold text-emerald-600 mb-2">{(t as any).explainability_strengths || (isCN ? '你的亮点' : 'Your Strengths')}</h4>
-                <ul className="space-y-1.5">
-                  {record.explainability.strengths.map((s, i) => (
-                    <li key={i} className="text-xs text-gray-700 flex items-start gap-2"><span className="text-emerald-500 mt-0.5">&#10003;</span> {s}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {record.explainability.growth_areas.length > 0 && (
-              <div>
-                <h4 className="text-xs font-bold text-amber-600 mb-2">{(t as any).explainability_growth || (isCN ? '成长方向' : 'Growth Areas')}</h4>
-                <ul className="space-y-1.5">
-                  {record.explainability.growth_areas.map((g, i) => (
-                    <li key={i} className="text-xs text-gray-700 flex items-start gap-2"><span className="text-amber-500 mt-0.5">&#9679;</span> {g}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {record.explainability.development_suggestions.length > 0 && (
-              <div>
-                <h4 className="text-xs font-bold text-blue-600 mb-2">{(t as any).explainability_suggestions || (isCN ? '发展建议' : 'Development Suggestions')}</h4>
-                <ul className="space-y-1.5">
-                  {record.explainability.development_suggestions.map((d, i) => (
-                    <li key={i} className="text-xs text-gray-700 flex items-start gap-2"><span className="text-blue-500 mt-0.5">&#10148;</span> {d}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+        {/* Confirm Button */}
+        {!editMode && (
+          <div className="text-center">
+            <button
+              onClick={handleConfirmSubmit}
+              className="px-16 py-4 bg-gray-900 text-white font-black rounded-full hover:bg-black transition-all shadow-2xl active:scale-[0.98] tracking-widest uppercase text-sm"
+            >
+              {(t as any).resultConfirmSubmit}
+            </button>
           </div>
         )}
-
-        {/* Thank You & Notice */}
-        <div className="space-y-3">
-          <h3 className="text-lg font-bold text-gray-900">{(t as any).resultThankYou}</h3>
-          {record.status !== 'reject' && (
-            <p className="text-sm text-gray-500">{t.resultNotice}</p>
-          )}
-        </div>
-
-        {/* Back Home Button */}
-        <button
-          onClick={onBackHome}
-          className="px-12 py-3 bg-gray-900 text-white font-bold rounded-full hover:bg-black transition-all shadow-lg active:scale-95"
-        >
-          {t.backHome}
-        </button>
       </div>
     </div>
   );

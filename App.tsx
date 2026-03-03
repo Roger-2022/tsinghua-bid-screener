@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { AppStage, CandidateBasicInfo, Message, CandidateRecord, Language, DimensionWeight, NumericDecisionThresholds, DimensionCriteria, GlobalDecisionRules, QuestionTemplate, QuestionOption, PromptConfig, ObjectiveResponse, StagePromptConfig, DecisionTreeNode, ApiConfig, ProbingStrategyConfig, WorkflowModuleConfig, InterviewSession, AdaptiveQuestionStateSerialized, LiveCandidateProfile, HybridProbingConfig, DEFAULT_PROBING_STRATEGY, DEFAULT_WORKFLOW_MODULES, OpenEndedQuestion, OpenEndedResponse, DEFAULT_OPEN_ENDED_QUESTIONS, QuestionCountConfig, DEFAULT_QUESTION_COUNT_CONFIG, SessionConfig, QuestionPromptSections, DEFAULT_QUALITY_CHECKS } from './types';
+import { AppStage, CandidateBasicInfo, Message, CandidateRecord, Language, DimensionWeight, NumericDecisionThresholds, DimensionCriteria, GlobalDecisionRules, QuestionTemplate, QuestionOption, PromptConfig, ObjectiveResponse, StagePromptConfig, DecisionTreeNode, ApiConfig, ProbingStrategyConfig, WorkflowModuleConfig, InterviewSession, AdaptiveQuestionStateSerialized, LiveCandidateProfile, HybridProbingConfig, DEFAULT_PROBING_STRATEGY, DEFAULT_WORKFLOW_MODULES, OpenEndedQuestion, OpenEndedResponse, DEFAULT_OPEN_ENDED_QUESTIONS, QuestionCountConfig, DEFAULT_QUESTION_COUNT_CONFIG, SessionConfig, QuestionPromptSections, DEFAULT_QUALITY_CHECKS, HelpWidgetConfig } from './types';
 import WelcomeScreen from './components/WelcomeScreen';
 import BasicInfoForm from './components/BasicInfoForm';
 import ChatInterface from './components/ChatInterface';
@@ -13,6 +13,7 @@ import AdminPrompts from './components/AdminPrompts';
 import OpenEndedAnalysis from './components/OpenEndedAnalysis';
 import BackupManager from './components/BackupManager';
 import AdminAIAssistant from './components/AdminAIAssistant';
+import HelpWidget from './components/HelpWidget';
 import { translations } from './i18n';
 import { generateFinalAssessment, DEFAULT_LEGACY_MODELS } from './services/aiService';
 import { EXAMPLE_CANDIDATES, isExampleCandidate } from './data/exampleCandidates';
@@ -559,6 +560,13 @@ const App: React.FC = () => {
   const [openEndedResponse, setOpenEndedResponse] = useState<OpenEndedResponse | null>(null);
   // Interview suspend/resume — tracks session when user navigates away mid-interview
   const [suspendedSession, setSuspendedSession] = useState<InterviewSession | null>(null);
+  // Help widget config — editable by admin
+  const [helpConfig, setHelpConfig] = useState<HelpWidgetConfig>(() => {
+    try {
+      const raw = localStorage.getItem('tsinghua_help_config');
+      return raw ? JSON.parse(raw) : { contactEmail: '', businessHours: '', extraNote: '' };
+    } catch { return { contactEmail: '', businessHours: '', extraNote: '' }; }
+  });
 
   // Merge example candidates (read-only) with real candidates for display
   const allCandidates = useMemo(() => [...EXAMPLE_CANDIDATES, ...candidates], [candidates]);
@@ -1090,11 +1098,11 @@ const App: React.FC = () => {
         status_badge_text_zh: result.status_badge_text_zh || '待定',
         profile: {
           name: candidateInfo!.name,
-          identity: candidateInfo!.identity === 'Employee' ? '在职' : candidateInfo!.identity,
-          school_org: candidateInfo!.schoolOrUnit,
+          identity: candidateInfo!.identity,
+          school: candidateInfo!.school,
+          department: candidateInfo!.department,
           major_title: candidateInfo!.major,
           grade_level: candidateInfo!.gradeOrLevel,
-          entry_year_or_work_years: candidateInfo!.yearOrExperience,
           weekly_commit_h1: candidateInfo!.timeCommitmentWeeks1to8,
           weekly_commit_h2: candidateInfo!.timeCommitmentWeeks9to16,
           offline_interview: candidateInfo!.offlineInterview,
@@ -1105,6 +1113,9 @@ const App: React.FC = () => {
           homework_willingness: candidateInfo!.homeworkWillingness,
           leader_willingness: candidateInfo!.leaderWillingness,
           self_description: candidateInfo!.selfDescription,
+          has_read_recruit_post: candidateInfo!.hasReadRecruitPost,
+          career_plan: candidateInfo!.careerPlan,
+          referral_source: candidateInfo!.referralSource,
         },
         scores: result.scores as any,
         evidence: { ...result.evidence as any, objective_responses: finalResponses },
@@ -1405,7 +1416,7 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
-        {stage === AppStage.RESULT && assessment && <ResultView record={assessment} lang={lang} onBackHome={() => setStage(AppStage.WELCOME)} />}
+        {stage === AppStage.RESULT && assessment && <ResultView record={assessment} lang={lang} onBackHome={() => setStage(AppStage.WELCOME)} candidateInfo={candidateInfo || undefined} onUpdateCandidateInfo={(updatedInfo) => { setCandidateInfo(updatedInfo); }} />}
         {stage === AppStage.ADMIN_LOGIN && <AdminLogin onLogin={(user) => { setAuthUser(user); setStage(AppStage.ADMIN_LIBRARY); }} lang={lang} />}
         {/* Config-frozen banner: warn admin that changes won't affect in-progress interview */}
         {isAuthenticated && sessionConfig && [AppStage.ADMIN_LIBRARY, AppStage.ADMIN_QUESTIONS, AppStage.ADMIN_PROMPTS].includes(stage) && (
@@ -1441,6 +1452,15 @@ const App: React.FC = () => {
       {/* AI Native: Admin AI Assistant (visible in admin modes) */}
       {isAuthenticated && (stage === AppStage.ADMIN_LIBRARY || stage === AppStage.ADMIN_QUESTIONS || stage === AppStage.ADMIN_CRITERIA || stage === AppStage.ADMIN_PROMPTS || stage === AppStage.ADMIN_QUICK_PREVIEW) && (
         <AdminAIAssistant lang={lang} candidates={allCandidates} />
+      )}
+
+      {/* Help Widget — user-facing pages (read-only) */}
+      {(!isAuthenticated || [AppStage.WELCOME, AppStage.BASIC_FORM, AppStage.INTERVIEW_QUESTIONNAIRE, AppStage.OPEN_ENDED_ANALYSIS, AppStage.ANALYZING, AppStage.RESULT].includes(stage)) && (
+        <HelpWidget config={helpConfig} lang={lang} />
+      )}
+      {/* Help Widget — admin pages (editable) */}
+      {isAuthenticated && (stage === AppStage.ADMIN_LIBRARY || stage === AppStage.ADMIN_QUESTIONS || stage === AppStage.ADMIN_CRITERIA || stage === AppStage.ADMIN_PROMPTS || stage === AppStage.ADMIN_QUICK_PREVIEW) && (
+        <HelpWidget config={helpConfig} lang={lang} isAdmin onSave={(cfg) => { setHelpConfig(cfg); localStorage.setItem('tsinghua_help_config', JSON.stringify(cfg)); }} />
       )}
     </div>
   );

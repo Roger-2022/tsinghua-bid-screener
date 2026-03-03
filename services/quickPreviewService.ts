@@ -20,19 +20,19 @@ const NAMES = [
   '黄思琪', '林梓萌', '马浩然', '高思齐', '杨雪莹',
 ];
 
-const SCHOOLS: { school: string; major: string }[] = [
-  { school: '清华大学经管学院', major: '工商管理' },
-  { school: '清华大学工学院', major: '工程管理' },
-  { school: '清华大学公管学院', major: '公共管理' },
-  { school: '北京大学光华管理学院', major: 'MBA' },
-  { school: '北京大学国家发展研究院', major: '经济学' },
-  { school: '中国人民大学商学院', major: '企业管理' },
-  { school: '某互联网科技公司', major: '产品经理' },
-  { school: '某咨询公司', major: '战略咨询' },
+const SCHOOLS: { school: string; department: string; major: string }[] = [
+  { school: '清华大学', department: '经管学院', major: '工商管理' },
+  { school: '清华大学', department: '工学院', major: '工程管理' },
+  { school: '清华大学', department: '公管学院', major: '公共管理' },
+  { school: '北京大学', department: '光华管理学院', major: 'MBA' },
+  { school: '北京大学', department: '国家发展研究院', major: '经济学' },
+  { school: '中国人民大学', department: '商学院', major: '企业管理' },
+  { school: '上海交通大学', department: '安泰经管学院', major: '金融学' },
+  { school: '浙江大学', department: '管理学院', major: '战略管理' },
 ];
 
 const IDENTITIES: CandidateBasicInfo['identity'][] = [
-  'Master', 'Master', 'MBA', 'MBA', 'Undergraduate', 'PhD', 'Employee',
+  'Master', 'Master', 'MBA', 'MBA', 'Undergraduate', 'PhD',
 ];
 
 const SELF_DESCRIPTIONS = [
@@ -57,7 +57,16 @@ const PROJECTS = [
   '某快消品牌校园代理，负责区域推广和团队管理，营收排名全国前10%。',
 ];
 
-const GRADES = ['2025级', '2024级', '2026级', '大三', '大四', '研一', '研二'];
+const GRADES = ['freshman', 'sophomore', 'junior', 'senior', 'master1', 'master2', 'mba1', 'phd1', 'phd2'];
+const REFERRAL_SOURCES = ['wechatPost', 'friendRefer', 'teacherRefer', 'schoolForum', 'socialMedia', 'searchEngine', 'other'];
+const CAREER_PLANS = [
+  '希望进入咨询行业，成为战略咨询顾问',
+  '计划创业，专注消费品行业的数字化转型',
+  '目标投资领域，未来做风险投资',
+  '希望在科技公司做产品经理',
+  '计划继续深造，攻读博士学位',
+  '目标进入金融行业，从事投行业务',
+];
 
 const PROBING_COST_TEMPLATES = [
   '为了深度学习，我愿意放弃短期实习机会，投入更多时间在课程项目上。',
@@ -111,17 +120,17 @@ export function generateMockCandidateInfo(): CandidateBasicInfo {
   const name = pick(NAMES);
   const schoolInfo = pick(SCHOOLS);
   const identity = pick(IDENTITIES);
-  const grade = identity === 'Employee' ? '3年工作经验' : pick(GRADES);
+  const grade = pick(GRADES);
   const pinyin = name.length > 0 ? `user_${Math.random().toString(36).substr(2, 6)}` : 'test_wx';
 
   return {
     name,
     wechat: pinyin,
     identity,
-    schoolOrUnit: schoolInfo.school,
+    school: schoolInfo.school,
+    department: schoolInfo.department,
     major: schoolInfo.major,
     gradeOrLevel: grade,
-    yearOrExperience: identity === 'Employee' ? '3年' : grade,
     timeCommitmentWeeks1to8: randInt(8, 15),
     timeCommitmentWeeks9to16: randInt(6, 12),
     offlineInterview: Math.random() > 0.2,
@@ -131,6 +140,9 @@ export function generateMockCandidateInfo(): CandidateBasicInfo {
     homeworkWillingness: Math.random() > 0.1,
     leaderWillingness: Math.random() > 0.5,
     selfDescription: pick(SELF_DESCRIPTIONS),
+    hasReadRecruitPost: Math.random() > 0.3 ? 'yes' : 'no',
+    careerPlan: pick(CAREER_PLANS),
+    referralSource: pick(REFERRAL_SOURCES),
   };
 }
 
@@ -226,7 +238,7 @@ export function generateMockMessages(
   const messages: Message[] = [
     {
       role: 'system',
-      content: `候选人: ${info.name}, 身份: ${info.identity}, 学校/单位: ${info.schoolOrUnit}, 专业: ${info.major}, 自我描述: ${info.selfDescription}`,
+      content: `候选人: ${info.name}, 身份: ${info.identity}, 学校: ${info.school} ${info.department}, 专业: ${info.major}, 自我描述: ${info.selfDescription}`,
       timestamp: now - 60000,
     },
   ];

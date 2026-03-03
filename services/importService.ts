@@ -103,10 +103,10 @@ export const processImportData = (
             phone: parts[3],        // 电话
             email: parts[4],        // 邮箱
             identity: parts[5],     // 身份类型
-            school_org: parts[6],   // 学校/单位
-            major_title: parts[7],  // 专业/职位
-            grade_level: parts[8],  // 年级/职级
-            year_exp: parts[9],     // 入学年份/工作年限
+            school: parts[6],       // 学校
+            department: parts[7],   // 院系
+            major_title: parts[8],  // 专业/职位
+            grade_level: parts[9],  // 年级
             weekly_h1: parts[10],   // 前8周每周投入(h)
             weekly_h2: parts[11],   // 后8周每周投入(h)
             offline: parts[12],     // 能否线下面试
@@ -114,27 +114,30 @@ export const processImportData = (
             leader: parts[14],      // 组长意愿
             self_description: parts[15], // 三词自述
             past_projects: parts[16],    // 过往项目经历
-            s_motiv: parts[17],     // 真实动机(0-10)
-            s_logic: parts[18],     // 逻辑闭环(0-10)
-            s_resil: parts[19],     // 反思与韧性(0-10)
-            s_innov: parts[20],     // 创新潜质(0-10)
-            s_commit: parts[21],    // 投入度(0-10)
-            s_thinking_depth: parts[22],   // 思维深度(0-10)
-            s_multidim_thinking: parts[23], // 多维思考(0-10)
-            s_overall: parts[24],   // 综合得分
-            status: parts[25],      // 筛选结果
-            keywords_raw: parts[26],// 画像标签
-            summary_zh: parts[27],  // 综合评价(中)
-            summary_en: parts[28],  // 综合评价(英)
-            top_reasons: parts[29], // 核心理由
-            risks: parts[30],       // 风险提示
-            evidence_points: parts[31], // 核心证据
-            interview_focus: parts[32], // 建议面试重点
-            admin_notes: parts[33], // 管理员备注
-            transcript: parts[34],  // 问答实录
-            open_ended_question: parts[35], // 开放题目
-            open_ended_answer: parts[36],   // 开放题回答
-            timestamp: parts[37],   // 提交时间
+            has_read_recruit_post: parts[17], // 是否阅读招生推送
+            career_plan: parts[18],     // 职业规划
+            referral_source: parts[19], // 从何得知
+            s_motiv: parts[20],     // 真实动机(0-10)
+            s_logic: parts[21],     // 逻辑闭环(0-10)
+            s_resil: parts[22],     // 反思与韧性(0-10)
+            s_innov: parts[23],     // 创新潜质(0-10)
+            s_commit: parts[24],    // 投入度(0-10)
+            s_thinking_depth: parts[25],   // 思维深度(0-10)
+            s_multidim_thinking: parts[26], // 多维思考(0-10)
+            s_overall: parts[27],   // 综合得分
+            status: parts[28],      // 筛选结果
+            keywords_raw: parts[29],// 画像标签
+            summary_zh: parts[30],  // 综合评价(中)
+            summary_en: parts[31],  // 综合评价(英)
+            top_reasons: parts[32], // 核心理由
+            risks: parts[33],       // 风险提示
+            evidence_points: parts[34], // 核心证据
+            interview_focus: parts[35], // 建议面试重点
+            admin_notes: parts[36], // 管理员备注
+            transcript: parts[37],  // 问答实录
+            open_ended_question: parts[38], // 开放题目
+            open_ended_answer: parts[39],   // 开放题回答
+            timestamp: parts[40],   // 提交时间
           };
         } else {
           // Old 34-column format (backward compatible)
@@ -231,10 +234,10 @@ const mapRowToRecord = (row: any, index: number, errors: string[]): CandidateRec
       profile: {
         name,
         identity: (row.identity || '其他') as any,
-        school_org: row.school_org || '',
+        school: row.school || row.school_org || '',
+        department: row.department || '',
         major_title: row.major_title || '',
         grade_level: row.grade_level || '',
-        entry_year_or_work_years: row.year_exp || '',
         weekly_commit_h1: parseInt(row.weekly_h1 || row.weekly_hours) || 0,
         weekly_commit_h2: parseInt(row.weekly_h2) || 0,
         offline_interview: parseBool(row.offline),
@@ -245,6 +248,9 @@ const mapRowToRecord = (row: any, index: number, errors: string[]): CandidateRec
         homework_willingness: parseBool(row.homework),
         leader_willingness: parseBool(row.leader),
         self_description: row.self_description || '',
+        has_read_recruit_post: row.has_read_recruit_post || 'no',
+        career_plan: row.career_plan || '',
+        referral_source: row.referral_source || '',
       },
       scores: {
         motivation: normalizeScore(row.s_motiv),

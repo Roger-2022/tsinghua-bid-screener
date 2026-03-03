@@ -13,7 +13,7 @@ function toRow(record: CandidateRecord) {
     phone: record.profile.phone || null,
     wechat_id: record.profile.wechat_id || null,
     identity: record.profile.identity,
-    school_org: record.profile.school_org,
+    school_org: record.profile.school + (record.profile.department ? ' ' + record.profile.department : ''),
     score_overall: record.scores.overall,
     data: record,
   };

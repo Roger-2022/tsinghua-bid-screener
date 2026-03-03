@@ -28,11 +28,11 @@ export interface Message {
 export interface CandidateBasicInfo {
   name: string;
   wechat: string;
-  identity: 'Undergraduate' | 'Master' | 'MBA' | 'PhD' | 'Employee';
-  schoolOrUnit: string;
+  identity: 'Undergraduate' | 'Master' | 'MBA' | 'PhD';
+  school: string;
+  department: string;
   major: string;
   gradeOrLevel: string;
-  yearOrExperience: string;
   timeCommitmentWeeks1to8: number;
   timeCommitmentWeeks9to16: number;
   offlineInterview: boolean;
@@ -42,6 +42,15 @@ export interface CandidateBasicInfo {
   homeworkWillingness: boolean;
   leaderWillingness: boolean;
   selfDescription: string;
+  hasReadRecruitPost: 'yes' | 'no';
+  careerPlan: string;
+  referralSource: string;
+}
+
+export interface HelpWidgetConfig {
+  contactEmail: string;
+  businessHours: string;
+  extraNote: string;
 }
 
 // ========== Question System ==========
@@ -125,6 +134,8 @@ export interface InterviewSession {
   selectedOpenEndedQuestion?: OpenEndedQuestion;
   // Config snapshot — admin changes won't affect in-progress interview
   sessionConfig?: SessionConfig;
+  // Suspended stage — records which stage the interview was at when navigated away
+  suspendedStage?: AppStage;
 }
 
 // ========== Adaptive Question Selection (Local, no AI) ==========
@@ -465,10 +476,10 @@ E，暂停参与，1
 export interface CandidateProfile {
   name: string;
   identity: string;
-  school_org: string;
+  school: string;
+  department: string;
   major_title: string;
   grade_level: string;
-  entry_year_or_work_years: string;
   weekly_commit_h1: number;
   weekly_commit_h2: number;
   offline_interview: boolean;
@@ -479,6 +490,9 @@ export interface CandidateProfile {
   homework_willingness: boolean;
   leader_willingness: boolean;
   self_description: string;
+  has_read_recruit_post: string;
+  career_plan: string;
+  referral_source: string;
 }
 
 export interface CandidateScores {
@@ -577,10 +591,10 @@ export const EXPORT_COLUMNS = [
   { key: 'phone',             zh: '电话',              en: 'Phone' },
   { key: 'email',             zh: '邮箱',              en: 'Email' },
   { key: 'identity',          zh: '身份类型',           en: 'Identity' },
-  { key: 'school_org',        zh: '学校/单位',          en: 'School/Org' },
+  { key: 'school',            zh: '学校',               en: 'School' },
+  { key: 'department',        zh: '院系',               en: 'Department' },
   { key: 'major_title',       zh: '专业/职位',          en: 'Major/Title' },
-  { key: 'grade_level',       zh: '年级/职级',          en: 'Grade/Level' },
-  { key: 'year_exp',          zh: '入学年份/工作年限',    en: 'Year/Experience' },
+  { key: 'grade_level',       zh: '年级',               en: 'Grade' },
   { key: 'weekly_h1',         zh: '前8周每周投入(h)',    en: 'Weekly Hours (Wk1-8)' },
   { key: 'weekly_h2',         zh: '后8周每周投入(h)',    en: 'Weekly Hours (Wk9-16)' },
   { key: 'offline_interview', zh: '能否线下面试',        en: 'Offline Interview' },
@@ -588,6 +602,9 @@ export const EXPORT_COLUMNS = [
   { key: 'leader',            zh: '组长意愿',           en: 'Leader Willingness' },
   { key: 'self_description',  zh: '三词自述',           en: 'Self Description' },
   { key: 'past_projects',     zh: '过往项目经历',        en: 'Past Projects' },
+  { key: 'has_read_recruit_post', zh: '是否阅读招生推送', en: 'Read Recruit Post' },
+  { key: 'career_plan',       zh: '职业规划',            en: 'Career Plan' },
+  { key: 'referral_source',   zh: '从何得知',            en: 'Referral Source' },
   { key: 's_motivation',      zh: '真实动机(0-10)',      en: 'Motivation (0-10)' },
   { key: 's_logic',           zh: '逻辑闭环(0-10)',      en: 'Logic (0-10)' },
   { key: 's_resilience',      zh: '反思与韧性(0-10)',    en: 'Resilience (0-10)' },
@@ -613,7 +630,7 @@ export const EXPORT_COLUMNS = [
 
 // ========== Export Column Groups (逻辑分组) ==========
 export const EXPORT_COLUMN_GROUPS = [
-  { id: 'basic', zh: '基本信息', en: 'Basic Information', keys: ['candidate_id', 'name', 'identity', 'school_org', 'major_title', 'grade_level', 'year_exp', 'self_description', 'past_projects'] },
+  { id: 'basic', zh: '基本信息', en: 'Basic Information', keys: ['candidate_id', 'name', 'identity', 'school', 'department', 'major_title', 'grade_level', 'self_description', 'past_projects', 'has_read_recruit_post', 'career_plan', 'referral_source'] },
   { id: 'contact', zh: '联系方式', en: 'Contact Information', keys: ['wechat_id', 'phone', 'email'] },
   { id: 'availability', zh: '参与意愿', en: 'Availability & Willingness', keys: ['weekly_h1', 'weekly_h2', 'offline_interview', 'homework', 'leader'] },
   { id: 'scores', zh: '评分维度', en: 'Score Dimensions', keys: ['s_motivation', 's_logic', 's_resilience', 's_innovation', 's_commitment', 's_thinking_depth', 's_multidim_thinking', 's_overall'] },
@@ -655,10 +672,10 @@ export const WORKFLOW_MODULE_DEMO_DATA: Record<string, string> = {
   phone: '138****6789',
   email: 'zhang@tsinghua.edu',
   identity: '硕士生',
-  school_org: '清华大学 经管学院',
+  school: '清华大学',
+  department: '经管学院',
   major_title: '金融学',
-  grade_level: '研二',
-  year_exp: '2024级',
+  grade_level: 'master2',
   weekly_h1: '12',
   weekly_h2: '8',
   offline_interview: '是',
@@ -715,11 +732,11 @@ export const DEFAULT_PROBING_STRATEGY: ProbingStrategyConfig = {
 
 // Default workflow module configs per stage
 export const DEFAULT_WORKFLOW_MODULES: WorkflowModuleConfig[] = [
-  { stageId: 'question_generation', selectedInputKeys: ['identity', 'school_org', 'major_title', 'grade_level', 'self_description', 'past_projects'], selectedOutputKeys: ['s_motivation', 's_logic', 's_resilience', 's_innovation', 's_commitment'] },
+  { stageId: 'question_generation', selectedInputKeys: ['identity', 'school', 'major_title', 'grade_level', 'self_description', 'past_projects'], selectedOutputKeys: ['s_motivation', 's_logic', 's_resilience', 's_innovation', 's_commitment'] },
   { stageId: 'probing_decision', selectedInputKeys: ['s_motivation', 's_logic', 's_resilience', 's_innovation', 's_commitment'], selectedOutputKeys: [] },
-  { stageId: 'score_calculation', selectedInputKeys: ['name', 'identity', 'school_org', 'self_description', 'past_projects', 's_motivation', 's_logic', 's_resilience', 's_innovation', 's_commitment'], selectedOutputKeys: ['s_overall', 'evidence_points', 'risk_flags'] },
-  { stageId: 'open_ended_scoring', selectedInputKeys: ['name', 'identity', 'school_org', 'self_description', 'open_ended_question', 'open_ended_answer'], selectedOutputKeys: ['s_thinking_depth', 's_multidim_thinking'] },
-  { stageId: 'profile_generation', selectedInputKeys: ['name', 'identity', 'school_org', 'major_title', 's_motivation', 's_logic', 's_resilience', 's_innovation', 's_commitment', 's_thinking_depth', 's_multidim_thinking', 's_overall', 'evidence_points'], selectedOutputKeys: ['summary_zh', 'summary_en', 'top_reasons', 'keywords', 'interview_focus', 'admin_notes'] },
+  { stageId: 'score_calculation', selectedInputKeys: ['name', 'identity', 'school', 'self_description', 'past_projects', 's_motivation', 's_logic', 's_resilience', 's_innovation', 's_commitment'], selectedOutputKeys: ['s_overall', 'evidence_points', 'risk_flags'] },
+  { stageId: 'open_ended_scoring', selectedInputKeys: ['name', 'identity', 'school', 'self_description', 'open_ended_question', 'open_ended_answer'], selectedOutputKeys: ['s_thinking_depth', 's_multidim_thinking'] },
+  { stageId: 'profile_generation', selectedInputKeys: ['name', 'identity', 'school', 'major_title', 's_motivation', 's_logic', 's_resilience', 's_innovation', 's_commitment', 's_thinking_depth', 's_multidim_thinking', 's_overall', 'evidence_points'], selectedOutputKeys: ['summary_zh', 'summary_en', 'top_reasons', 'keywords', 'interview_focus', 'admin_notes'] },
   { stageId: 'decision_making', selectedInputKeys: ['s_motivation', 's_logic', 's_resilience', 's_innovation', 's_commitment', 's_thinking_depth', 's_multidim_thinking', 's_overall', 'risk_flags', 'evidence_points'], selectedOutputKeys: ['status'] },
 ];
 

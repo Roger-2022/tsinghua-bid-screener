@@ -163,10 +163,10 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
       profile: {
         name: '新候选人',
         identity: '其他',
-        school_org: '',
+        school: '',
+        department: '',
         major_title: '',
         grade_level: '',
-        entry_year_or_work_years: '',
         weekly_commit_h1: 0,
         weekly_commit_h2: 0,
         offline_interview: true,
@@ -177,6 +177,9 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
         homework_willingness: true,
         leader_willingness: false,
         self_description: '',
+        has_read_recruit_post: 'no',
+        career_plan: '',
+        referral_source: '',
       },
       scores: {
         motivation: 0,
@@ -386,7 +389,7 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
                     </span>
                   </div>
                   <p className="text-[11px] text-gray-500 truncate">
-                    {c.profile.school_org || (isCN ? '未填写' : 'N/A')} &middot; {c.profile.identity}
+                    {c.profile.school + ' ' + (c.profile.department || '') || (isCN ? '未填写' : 'N/A')} &middot; {c.profile.identity}
                   </p>
                   <div className="flex flex-wrap gap-1 mt-1.5">
                     {c.admin_record.search_keywords.slice(0, 3).map((kw, i) => (
@@ -583,15 +586,31 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
-                        {t.schoolUnit}
+                        {(t as any).school}
                       </label>
                       <input
                         type="text"
-                        value={currentRecord.profile.school_org}
+                        value={currentRecord.profile.school}
                         onChange={e =>
                           handleEditChange({
                             ...currentRecord,
-                            profile: { ...currentRecord.profile, school_org: e.target.value },
+                            profile: { ...currentRecord.profile, school: e.target.value },
+                          })
+                        }
+                        className="w-full bg-white border rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-tsinghua-300"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                        {(t as any).department}
+                      </label>
+                      <input
+                        type="text"
+                        value={currentRecord.profile.department}
+                        onChange={e =>
+                          handleEditChange({
+                            ...currentRecord,
+                            profile: { ...currentRecord.profile, department: e.target.value },
                           })
                         }
                         className="w-full bg-white border rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-tsinghua-300"
@@ -615,7 +634,7 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
-                        {t.gradeLevel}
+                        {(t as any).gradeLevel}
                       </label>
                       <input
                         type="text"
@@ -624,22 +643,6 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
                           handleEditChange({
                             ...currentRecord,
                             profile: { ...currentRecord.profile, grade_level: e.target.value },
-                          })
-                        }
-                        className="w-full bg-white border rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-tsinghua-300"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
-                        {t.yearOrExp}
-                      </label>
-                      <input
-                        type="text"
-                        value={currentRecord.profile.entry_year_or_work_years || ''}
-                        onChange={e =>
-                          handleEditChange({
-                            ...currentRecord,
-                            profile: { ...currentRecord.profile, entry_year_or_work_years: e.target.value },
                           })
                         }
                         className="w-full bg-white border rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-tsinghua-300"
@@ -778,7 +781,7 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
                       </p>
                       <p className="font-medium">
                         {currentRecord.profile.identity} &middot;{' '}
-                        {currentRecord.profile.school_org || (isCN ? '未录入' : 'N/A')}
+                        {currentRecord.profile.school || (isCN ? '未录入' : 'N/A')} {currentRecord.profile.department || ''}
                       </p>
                     </div>
                     <div>
@@ -811,10 +814,10 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
                     </div>
                     <div>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
-                        {t.yearOrExp}
+                        {(t as any).gradeLevel}
                       </p>
                       <p className="font-medium">
-                        {currentRecord.profile.entry_year_or_work_years || (isCN ? '未填写' : 'N/A')}
+                        {currentRecord.profile.grade_level || (isCN ? '未填写' : 'N/A')}
                       </p>
                     </div>
                     {currentRecord.profile.self_description && (

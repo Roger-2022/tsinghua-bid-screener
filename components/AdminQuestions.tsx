@@ -100,7 +100,7 @@ const AdminQuestions: React.FC<Props> = ({ questions, dimensionWeights, onUpdate
   };
 
   // ==================== Assembly & Prompt Preview ====================
-  const assembleFromSections = (sec: QuestionPromptSections, fwStr: string, thrStr: string): string => {
+  const assembleFromSections = (sec: QuestionPromptSections): string => {
     const enabledChecks = sec.qualityChecks
       .filter(c => c.enabled)
       .map((c, i) => `${i + 1}. ${isCN ? c.text_zh : c.text_en}`)
@@ -109,23 +109,19 @@ const AdminQuestions: React.FC<Props> = ({ questions, dimensionWeights, onUpdate
     return [
       `一、角色定位\n${sec.role}`,
       `二、课程与场景背景\n\n2.1 课程特性\n${sec.courseBackground}\n\n2.2 典型压力场景\n${sec.pressureScenarios}\n\n2.3 案例库\n${sec.caseLibrary.join('、')}`,
-      `三、评估框架\n${fwStr}`,
-      `四、维度评分方法论\n${sec.dimensionMethodology}`,
-      `五、题目设计规则\n\n5.1 基本结构\n- 每题 ${sec.scoringFormat.optionCount} 个选项（A-${lastLetter}）\n- 分值序列：${sec.scoringFormat.scoreSequence.join('/')}\n- 至少 ${sec.scoringFormat.caseEmbedPercent}% 问题嵌入案例库具体案例\n\n5.2 选项设计原则\n${sec.optionDesignRules}\n\n5.3 追问设计原则\n${sec.probingDesignRules}`,
-      `六、质量检查清单\n${enabledChecks}`,
-      `七、决策规则\n${thrStr}`,
-      `八、生成示例\n${sec.examples}`,
-      `九、生成任务指令\n${sec.generationInstructions}`,
+      `三、维度评分方法论\n${sec.dimensionMethodology}`,
+      `四、题目设计规则\n\n4.1 基本结构\n- 每题 ${sec.scoringFormat.optionCount} 个选项（A-${lastLetter}）\n- 分值序列：${sec.scoringFormat.scoreSequence.join('/')}\n- 至少 ${sec.scoringFormat.caseEmbedPercent}% 问题嵌入案例库具体案例\n\n4.2 选项设计原则\n${sec.optionDesignRules}\n\n4.3 追问设计原则\n${sec.probingDesignRules}`,
+      `五、质量检查清单\n${enabledChecks}`,
     ].join('\n\n');
   };
 
   // Reverse-parse full text back into sections (best-effort)
   const parseFullTextToSections = (text: string, prev: QuestionPromptSections): QuestionPromptSections => {
     const result = { ...prev };
-    // Split by major section headers (一、二、...九、)
-    const headerPattern = /^(一|二|三|四|五|六|七|八|九)、.+/m;
+    // Split by major section headers (一、二、...五、)
+    const headerPattern = /^(一|二|三|四|五)、.+/m;
     const parts: Record<string, string> = {};
-    const segments = text.split(/\n\n(?=(一|二|三|四|五|六|七|八|九)、)/);
+    const segments = text.split(/\n\n(?=(一|二|三|四|五)、)/);
     let currentKey = '';
     for (const seg of segments) {
       const hMatch = seg.match(headerPattern);
@@ -152,28 +148,27 @@ const AdminQuestions: React.FC<Props> = ({ questions, dimensionWeights, onUpdate
       if (sub23) result.caseLibrary = sub23[1].trim().split(/[、,，]/).map(s => s.trim()).filter(Boolean);
     }
 
-    // 三 → SKIP (read-only framework)
-    // 四 → dimensionMethodology
-    if (parts['四'] !== undefined) result.dimensionMethodology = parts['四'];
+    // 三 → dimensionMethodology
+    if (parts['三'] !== undefined) result.dimensionMethodology = parts['三'];
 
-    // 五 → scoringFormat, optionDesignRules, probingDesignRules
-    if (parts['五'] !== undefined) {
-      const sec5 = parts['五'];
-      const optMatch = sec5.match(/每题\s*(\d+)\s*个选项/);
+    // 四 → scoringFormat, optionDesignRules, probingDesignRules
+    if (parts['四'] !== undefined) {
+      const sec4 = parts['四'];
+      const optMatch = sec4.match(/每题\s*(\d+)\s*个选项/);
       if (optMatch) result.scoringFormat = { ...result.scoringFormat, optionCount: parseInt(optMatch[1]) };
-      const seqMatch = sec5.match(/分值序列[：:]\s*([\d/,]+)/);
+      const seqMatch = sec4.match(/分值序列[：:]\s*([\d/,]+)/);
       if (seqMatch) result.scoringFormat = { ...result.scoringFormat, scoreSequence: seqMatch[1].split('/').map(s => parseInt(s.trim())).filter(n => !isNaN(n)) };
-      const pctMatch = sec5.match(/至少\s*(\d+)\s*%/);
+      const pctMatch = sec4.match(/至少\s*(\d+)\s*%/);
       if (pctMatch) result.scoringFormat = { ...result.scoringFormat, caseEmbedPercent: parseInt(pctMatch[1]) };
-      const sub52 = sec5.match(/5\.2\s+[^\n]+\n([\s\S]*?)(?=\n5\.3\s|$)/);
-      const sub53 = sec5.match(/5\.3\s+[^\n]+\n([\s\S]*?)$/);
-      if (sub52) result.optionDesignRules = sub52[1].trim();
-      if (sub53) result.probingDesignRules = sub53[1].trim();
+      const sub42 = sec4.match(/4\.2\s+[^\n]+\n([\s\S]*?)(?=\n4\.3\s|$)/);
+      const sub43 = sec4.match(/4\.3\s+[^\n]+\n([\s\S]*?)$/);
+      if (sub42) result.optionDesignRules = sub42[1].trim();
+      if (sub43) result.probingDesignRules = sub43[1].trim();
     }
 
-    // 六 → qualityChecks (match by text, preserve existing toggles)
-    if (parts['六'] !== undefined) {
-      const lines = parts['六'].split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
+    // 五 → qualityChecks (match by text, preserve existing toggles)
+    if (parts['五'] !== undefined) {
+      const lines = parts['五'].split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
       const updatedChecks = prev.qualityChecks.map(c => ({
         ...c,
         enabled: lines.some(l => l === (isCN ? c.text_zh : c.text_en))
@@ -187,34 +182,12 @@ const AdminQuestions: React.FC<Props> = ({ questions, dimensionWeights, onUpdate
       result.qualityChecks = [...updatedChecks, ...newCustom];
     }
 
-    // 七 → SKIP (read-only thresholds)
-    // 八 → examples
-    if (parts['八'] !== undefined) result.examples = parts['八'];
-    // 九 → generationInstructions
-    if (parts['九'] !== undefined) result.generationInstructions = parts['九'];
-
     return result;
   };
 
   const fullLivePrompt = useMemo(() => {
-    const frameworkStr = dimensionWeights.map((w, i) => {
-      return `3.${i+1} ${w.dimension} (${w.dimension_en}) — ${lang === 'EN' ? 'Weight' : '权重'}: ${Math.round(w.weight * 100)}%`;
-    }).join('\n');
-
-    const thresholdStr = lang === 'EN'
-      ? `Decision Thresholds (numeric):
-- Reject (<): M=${decisionThresholds.reject.motivation} L=${decisionThresholds.reject.logic} R=${decisionThresholds.reject.resilience} I=${decisionThresholds.reject.innovation} C=${decisionThresholds.reject.commitment}
-- Hold (>=): M=${decisionThresholds.hold.motivation} L=${decisionThresholds.hold.logic} R=${decisionThresholds.hold.resilience} I=${decisionThresholds.hold.innovation} C=${decisionThresholds.hold.commitment} Avg>=${decisionThresholds.hold.avg}
-- Pass (>=): M=${decisionThresholds.pass.motivation} L=${decisionThresholds.pass.logic} R=${decisionThresholds.pass.resilience} I=${decisionThresholds.pass.innovation} C=${decisionThresholds.pass.commitment} Avg>=${decisionThresholds.pass.avg}
-- Star (>=): M=${decisionThresholds.star.motivation} L=${decisionThresholds.star.logic} R=${decisionThresholds.star.resilience} I=${decisionThresholds.star.innovation} C=${decisionThresholds.star.commitment} Avg>=${decisionThresholds.star.avg}`
-      : `决策阈值 (数字):
-- 清退 (<): 动机=${decisionThresholds.reject.motivation} 逻辑=${decisionThresholds.reject.logic} 韧性=${decisionThresholds.reject.resilience} 创新=${decisionThresholds.reject.innovation} 投入=${decisionThresholds.reject.commitment}
-- 待定 (>=): 动机=${decisionThresholds.hold.motivation} 逻辑=${decisionThresholds.hold.logic} 韧性=${decisionThresholds.hold.resilience} 创新=${decisionThresholds.hold.innovation} 投入=${decisionThresholds.hold.commitment} 均分>=${decisionThresholds.hold.avg}
-- 通过 (>=): 动机=${decisionThresholds.pass.motivation} 逻辑=${decisionThresholds.pass.logic} 韧性=${decisionThresholds.pass.resilience} 创新=${decisionThresholds.pass.innovation} 投入=${decisionThresholds.pass.commitment} 均分>=${decisionThresholds.pass.avg}
-- 示范 (>=): 动机=${decisionThresholds.star.motivation} 逻辑=${decisionThresholds.star.logic} 韧性=${decisionThresholds.star.resilience} 创新=${decisionThresholds.star.innovation} 投入=${decisionThresholds.star.commitment} 均分>=${decisionThresholds.star.avg}`;
-
-    return assembleFromSections(editingSections, frameworkStr, thresholdStr);
-  }, [editingSections, dimensionWeights, decisionThresholds, lang]);
+    return assembleFromSections(editingSections);
+  }, [editingSections]);
 
   // ==================== Text Parsing ====================
   const parseRawText = (text: string): { records: QuestionTemplate[]; error?: string } => {

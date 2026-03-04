@@ -42,7 +42,7 @@ const AdminQuestions: React.FC<Props> = ({ questions, dimensionWeights, onUpdate
   const [bulkText, setBulkText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingSections, setEditingSections] = useState<QuestionPromptSections>(
-    promptConfig.sections || DEFAULT_PROMPT_SECTIONS
+    { ...DEFAULT_PROMPT_SECTIONS, ...(promptConfig.sections || {}) }
   );
   const [newCaseTag, setNewCaseTag] = useState('');
   const [newQualityText, setNewQualityText] = useState('');
@@ -74,7 +74,7 @@ const AdminQuestions: React.FC<Props> = ({ questions, dimensionWeights, onUpdate
   // Sync probing strategy prop → local editing state
   useEffect(() => { setEditingStrategy(probingStrategy); }, [probingStrategy]);
   // Sync sections prop → local editing state
-  useEffect(() => { setEditingSections(promptConfig.sections || DEFAULT_PROMPT_SECTIONS); }, [promptConfig.sections]);
+  useEffect(() => { setEditingSections({ ...DEFAULT_PROMPT_SECTIONS, ...(promptConfig.sections || {}) }); }, [promptConfig.sections]);
 
   // Init AI fill counts when dialog opens
   useEffect(() => {
@@ -110,21 +110,22 @@ const AdminQuestions: React.FC<Props> = ({ questions, dimensionWeights, onUpdate
       `一、角色定位\n${sec.role}`,
       `二、课程与场景背景\n\n2.1 课程特性\n${sec.courseBackground}\n\n2.2 典型压力场景\n${sec.pressureScenarios}\n\n2.3 案例库\n${sec.caseLibrary.join('、')}`,
       `三、评估框架\n${fwStr}`,
-      `四、题目设计规则\n\n4.1 基本结构\n- 每题 ${sec.scoringFormat.optionCount} 个选项（A-${lastLetter}）\n- 分值序列：${sec.scoringFormat.scoreSequence.join('/')}\n- 至少 ${sec.scoringFormat.caseEmbedPercent}% 问题嵌入案例库具体案例\n\n4.2 选项设计原则\n${sec.optionDesignRules}\n\n4.3 追问设计原则\n${sec.probingDesignRules}`,
-      `五、质量检查清单\n${enabledChecks}`,
-      `六、决策规则\n${thrStr}`,
-      `七、生成示例\n${sec.examples}`,
-      `八、生成任务指令\n${sec.generationInstructions}`,
+      `四、维度评分方法论\n${sec.dimensionMethodology}`,
+      `五、题目设计规则\n\n5.1 基本结构\n- 每题 ${sec.scoringFormat.optionCount} 个选项（A-${lastLetter}）\n- 分值序列：${sec.scoringFormat.scoreSequence.join('/')}\n- 至少 ${sec.scoringFormat.caseEmbedPercent}% 问题嵌入案例库具体案例\n\n5.2 选项设计原则\n${sec.optionDesignRules}\n\n5.3 追问设计原则\n${sec.probingDesignRules}`,
+      `六、质量检查清单\n${enabledChecks}`,
+      `七、决策规则\n${thrStr}`,
+      `八、生成示例\n${sec.examples}`,
+      `九、生成任务指令\n${sec.generationInstructions}`,
     ].join('\n\n');
   };
 
   // Reverse-parse full text back into sections (best-effort)
   const parseFullTextToSections = (text: string, prev: QuestionPromptSections): QuestionPromptSections => {
     const result = { ...prev };
-    // Split by major section headers (一、二、...八、)
-    const headerPattern = /^(一|二|三|四|五|六|七|八)、.+/m;
+    // Split by major section headers (一、二、...九、)
+    const headerPattern = /^(一|二|三|四|五|六|七|八|九)、.+/m;
     const parts: Record<string, string> = {};
-    const segments = text.split(/\n\n(?=(一|二|三|四|五|六|七|八)、)/);
+    const segments = text.split(/\n\n(?=(一|二|三|四|五|六|七|八|九)、)/);
     let currentKey = '';
     for (const seg of segments) {
       const hMatch = seg.match(headerPattern);
@@ -152,24 +153,27 @@ const AdminQuestions: React.FC<Props> = ({ questions, dimensionWeights, onUpdate
     }
 
     // 三 → SKIP (read-only framework)
-    // 四 → scoringFormat, optionDesignRules, probingDesignRules
-    if (parts['四'] !== undefined) {
-      const sec4 = parts['四'];
-      const optMatch = sec4.match(/每题\s*(\d+)\s*个选项/);
+    // 四 → dimensionMethodology
+    if (parts['四'] !== undefined) result.dimensionMethodology = parts['四'];
+
+    // 五 → scoringFormat, optionDesignRules, probingDesignRules
+    if (parts['五'] !== undefined) {
+      const sec5 = parts['五'];
+      const optMatch = sec5.match(/每题\s*(\d+)\s*个选项/);
       if (optMatch) result.scoringFormat = { ...result.scoringFormat, optionCount: parseInt(optMatch[1]) };
-      const seqMatch = sec4.match(/分值序列[：:]\s*([\d/,]+)/);
+      const seqMatch = sec5.match(/分值序列[：:]\s*([\d/,]+)/);
       if (seqMatch) result.scoringFormat = { ...result.scoringFormat, scoreSequence: seqMatch[1].split('/').map(s => parseInt(s.trim())).filter(n => !isNaN(n)) };
-      const pctMatch = sec4.match(/至少\s*(\d+)\s*%/);
+      const pctMatch = sec5.match(/至少\s*(\d+)\s*%/);
       if (pctMatch) result.scoringFormat = { ...result.scoringFormat, caseEmbedPercent: parseInt(pctMatch[1]) };
-      const sub42 = sec4.match(/4\.2\s+[^\n]+\n([\s\S]*?)(?=\n4\.3\s|$)/);
-      const sub43 = sec4.match(/4\.3\s+[^\n]+\n([\s\S]*?)$/);
-      if (sub42) result.optionDesignRules = sub42[1].trim();
-      if (sub43) result.probingDesignRules = sub43[1].trim();
+      const sub52 = sec5.match(/5\.2\s+[^\n]+\n([\s\S]*?)(?=\n5\.3\s|$)/);
+      const sub53 = sec5.match(/5\.3\s+[^\n]+\n([\s\S]*?)$/);
+      if (sub52) result.optionDesignRules = sub52[1].trim();
+      if (sub53) result.probingDesignRules = sub53[1].trim();
     }
 
-    // 五 → qualityChecks (match by text, preserve existing toggles)
-    if (parts['五'] !== undefined) {
-      const lines = parts['五'].split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
+    // 六 → qualityChecks (match by text, preserve existing toggles)
+    if (parts['六'] !== undefined) {
+      const lines = parts['六'].split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
       const updatedChecks = prev.qualityChecks.map(c => ({
         ...c,
         enabled: lines.some(l => l === (isCN ? c.text_zh : c.text_en))
@@ -183,11 +187,11 @@ const AdminQuestions: React.FC<Props> = ({ questions, dimensionWeights, onUpdate
       result.qualityChecks = [...updatedChecks, ...newCustom];
     }
 
-    // 六 → SKIP (read-only thresholds)
-    // 七 → examples
-    if (parts['七'] !== undefined) result.examples = parts['七'];
-    // 八 → generationInstructions
-    if (parts['八'] !== undefined) result.generationInstructions = parts['八'];
+    // 七 → SKIP (read-only thresholds)
+    // 八 → examples
+    if (parts['八'] !== undefined) result.examples = parts['八'];
+    // 九 → generationInstructions
+    if (parts['九'] !== undefined) result.generationInstructions = parts['九'];
 
     return result;
   };
@@ -589,7 +593,7 @@ const AdminQuestions: React.FC<Props> = ({ questions, dimensionWeights, onUpdate
 
             {/* Footer */}
             <div className="px-10 py-4 border-t bg-white flex justify-between items-center flex-shrink-0">
-              <button onClick={() => { setEditingSections(promptConfig.sections || DEFAULT_PROMPT_SECTIONS); setEditingStrategy(probingStrategy); setIsPromptEditing(false); }}
+              <button onClick={() => { setEditingSections({ ...DEFAULT_PROMPT_SECTIONS, ...(promptConfig.sections || {}) }); setEditingStrategy(probingStrategy); setIsPromptEditing(false); }}
                 className="px-8 py-3 text-gray-400 font-black uppercase text-xs tracking-widest hover:text-gray-600 transition">{t.cancelModify}</button>
               <button onClick={handleSavePrompt}
                 className="px-10 py-3 bg-tsinghua-900 text-white font-black rounded-2xl shadow-xl uppercase text-xs tracking-widest hover:bg-black transition active:scale-[0.98]">{t.saveAndSync}</button>

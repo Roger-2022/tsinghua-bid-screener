@@ -241,6 +241,9 @@ const ResultView: React.FC<Props> = ({ record, isAdmin = false, lang, isEditing 
   };
 
   const handleConfirmSubmit = () => {
+    if (editData && onUpdateCandidateInfo) {
+      onUpdateCandidateInfo(editData);
+    }
     setStep('done');
   };
 
@@ -381,6 +384,45 @@ const ResultView: React.FC<Props> = ({ record, isAdmin = false, lang, isEditing 
             )}
           </div>
         </div>
+
+        {/* Commitment Checkboxes */}
+        {!editMode && editData && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-6 space-y-4">
+              <p className="text-sm font-black text-gray-900">{(t as any).resultConfirmItems}</p>
+              <label className="flex items-center gap-4 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  name="offlineInterview"
+                  checked={editData.offlineInterview}
+                  onChange={handleEditField}
+                  className="w-5 h-5 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
+                />
+                <span className="text-sm text-gray-700 group-hover:text-tsinghua-600 transition">{t.offlineInterview}</span>
+              </label>
+              <label className="flex items-center gap-4 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  name="homeworkWillingness"
+                  checked={editData.homeworkWillingness}
+                  onChange={handleEditField}
+                  className="w-5 h-5 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
+                />
+                <span className="text-sm text-gray-700 group-hover:text-tsinghua-600 transition">{t.willingness}</span>
+              </label>
+              <label className="flex items-center gap-4 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  name="leaderWillingness"
+                  checked={editData.leaderWillingness}
+                  onChange={handleEditField}
+                  className="w-5 h-5 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
+                />
+                <span className="text-sm text-gray-700 group-hover:text-tsinghua-600 transition">{t.leader}</span>
+              </label>
+            </div>
+          </div>
+        )}
 
         {/* Confirm Button */}
         {!editMode && (

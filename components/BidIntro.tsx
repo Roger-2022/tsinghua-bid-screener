@@ -88,15 +88,43 @@ const BidIntro: React.FC<Props> = ({ lang, onContinue }) => {
                 </h2>
                 <div className="space-y-3 text-sm text-gray-600 leading-relaxed">
                   <p>商业智慧设计人才培养计划（Business Intelligence Design，简称 BID）由清华经管学院金融系教授、博士生导师、清华经管商业模式创新研究中心主任<strong className="text-gray-900">朱武祥</strong>创办。</p>
-                  <p>每期持续一学期：<strong className="text-gray-900">8 次周末课程 + 2 次小组探讨研究</strong>，系统讲授商业模式、经济、金融、前沿科技等领域的理论知识与最新趋势。自 2016 年至今已举办十七期，培养学员超过 700 人。</p>
-                  <p>参与者中 <strong className="text-gray-900">80% 来自非经管专业，25% 为博士同学</strong>——我们尤为欢迎多元化背景的你。</p>
+                  <p>BID 不同于传统 MBA 或学术课程，<strong className="text-gray-900">面向实践和应用</strong>，注重真实商业场景下的分析与决策训练，培养你在快速变化的商业环境中看懂问题本质、设计解决方案的实操能力。</p>
+                  <p>自 2016 年至今已举办十七期，培养学员超过 700 人。参与者中 <strong className="text-gray-900">80% 来自非经管专业，25% 为博士同学</strong>——我们尤为欢迎多元化背景的你。</p>
                 </div>
               </section>
 
-              {/* Section 4: What You'll Gain */}
+              {/* Section 4: Course Schedule */}
               <section>
                 <h2 className="text-lg font-black text-gray-900 mb-3 flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-lg bg-green-100 text-green-700 flex items-center justify-center text-sm font-black">04</span>
+                  <span className="w-8 h-8 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center text-sm font-black">04</span>
+                  课程安排
+                </h2>
+                <div className="space-y-2 text-sm text-gray-600 leading-relaxed">
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-2">
+                      <span className="text-cyan-600 mt-0.5 flex-shrink-0">•</span>
+                      <span>每期持续<strong className="text-gray-900">一学期（约 16 周）</strong>，期中周和考试周暂停</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-cyan-600 mt-0.5 flex-shrink-0">•</span>
+                      <span><strong className="text-gray-900">8 次周末课程（周六全天）</strong>：涵盖商业模式、经济分析、金融逻辑、前沿科技等</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-cyan-600 mt-0.5 flex-shrink-0">•</span>
+                      <span><strong className="text-gray-900">2 次小组探讨研究</strong>：分组完成课题研讨与产出</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-cyan-600 mt-0.5 flex-shrink-0">•</span>
+                      <span>课后有<strong className="text-gray-900">小组讨论和作业</strong>环节</span>
+                    </li>
+                  </ul>
+                </div>
+              </section>
+
+              {/* Section 5: What You'll Gain */}
+              <section>
+                <h2 className="text-lg font-black text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-lg bg-green-100 text-green-700 flex items-center justify-center text-sm font-black">05</span>
                   在 BID，你将收获
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -114,10 +142,10 @@ const BidIntro: React.FC<Props> = ({ lang, onContinue }) => {
                 </div>
               </section>
 
-              {/* Section 5: Who Should Join */}
+              {/* Section 6: Who Should Join */}
               <section>
                 <h2 className="text-lg font-black text-gray-900 mb-3 flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-black">05</span>
+                  <span className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-black">06</span>
                   加入我们，如果你
                 </h2>
                 <ul className="space-y-2 text-sm text-gray-600">
@@ -174,13 +202,41 @@ const BidIntro: React.FC<Props> = ({ lang, onContinue }) => {
                 </h2>
                 <div className="space-y-3 text-sm text-gray-600 leading-relaxed">
                   <p>Business Intelligence Design (BID) was founded by <strong className="text-gray-900">Professor Zhu Wuxiang</strong>, doctoral supervisor at Tsinghua SEM's Finance Department and Director of the Business Model Innovation Center.</p>
-                  <p>Each cohort lasts one semester: <strong className="text-gray-900">8 weekend lectures + 2 group research sessions</strong>. Since 2016, BID has run 17 cohorts with 700+ alumni. <strong className="text-gray-900">80% come from non-business backgrounds, 25% are PhD students.</strong></p>
+                  <p>Unlike traditional MBA or academic programs, BID is <strong className="text-gray-900">practice-oriented</strong>, focusing on real-world business analysis and decision-making to help you understand problems at their core and design effective solutions.</p>
+                  <p>Since 2016, BID has run 17 cohorts with 700+ alumni. <strong className="text-gray-900">80% come from non-business backgrounds, 25% are PhD students.</strong></p>
                 </div>
               </section>
 
               <section>
                 <h2 className="text-lg font-black text-gray-900 mb-3 flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-lg bg-green-100 text-green-700 flex items-center justify-center text-sm font-black">04</span>
+                  <span className="w-8 h-8 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center text-sm font-black">04</span>
+                  Course Schedule
+                </h2>
+                <div className="space-y-2 text-sm text-gray-600 leading-relaxed">
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-2">
+                      <span className="text-cyan-600 mt-0.5 flex-shrink-0">•</span>
+                      <span>Each cohort lasts <strong className="text-gray-900">one semester (~16 weeks)</strong>, paused during midterm and exam weeks</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-cyan-600 mt-0.5 flex-shrink-0">•</span>
+                      <span><strong className="text-gray-900">8 weekend lectures (full-day Saturday)</strong>: covering business models, economics, finance, frontier tech, etc.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-cyan-600 mt-0.5 flex-shrink-0">•</span>
+                      <span><strong className="text-gray-900">2 group research sessions</strong>: team-based topic research and output</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-cyan-600 mt-0.5 flex-shrink-0">•</span>
+                      <span>Post-class <strong className="text-gray-900">group discussions and assignments</strong></span>
+                    </li>
+                  </ul>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-lg font-black text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-lg bg-green-100 text-green-700 flex items-center justify-center text-sm font-black">05</span>
                   What You'll Gain
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

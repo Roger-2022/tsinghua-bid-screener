@@ -405,46 +405,6 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData, recruitPo
             />
           </div>
 
-          {/* Checkboxes */}
-          <div className="flex flex-col gap-4 py-4 px-2">
-            <label className="flex items-center gap-4 cursor-pointer group">
-              <input
-                type="checkbox"
-                name="offlineInterview"
-                checked={formData.offlineInterview}
-                onChange={handleChange}
-                className="w-6 h-6 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
-              />
-              <span className="text-sm font-bold text-gray-700 group-hover:text-tsinghua-600 transition">
-                {t.offlineInterview} <span className="text-red-400">*</span>
-              </span>
-            </label>
-            <label className="flex items-center gap-4 cursor-pointer group">
-              <input
-                type="checkbox"
-                name="homeworkWillingness"
-                checked={formData.homeworkWillingness}
-                onChange={handleChange}
-                className="w-6 h-6 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
-              />
-              <span className="text-sm font-bold text-gray-700 group-hover:text-tsinghua-600 transition">
-                {t.willingness} <span className="text-red-400">*</span>
-              </span>
-            </label>
-            <label className="flex items-center gap-4 cursor-pointer group">
-              <input
-                type="checkbox"
-                name="leaderWillingness"
-                checked={formData.leaderWillingness}
-                onChange={handleChange}
-                className="w-6 h-6 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
-              />
-              <span className="text-sm font-bold text-gray-700 group-hover:text-tsinghua-600 transition">
-                {t.leader} <span className="text-red-400">*</span>
-              </span>
-            </label>
-          </div>
-
           {/* Submit */}
           <button
             type="submit"

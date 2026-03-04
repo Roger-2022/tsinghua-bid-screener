@@ -28,7 +28,7 @@ export interface Message {
 // ========== Candidate Basic Info ==========
 export interface CandidateBasicInfo {
   name: string;
-  gender: 'male' | 'female';
+  gender: 'male' | 'female' | '';
   wechat: string;
   identity: 'Undergraduate' | 'Master' | 'MBA' | 'PhD';
   school: string;

@@ -11,6 +11,7 @@ import AdminQuestions from './components/AdminQuestions';
 import AdminLogin from './components/AdminLogin';
 import AdminPrompts from './components/AdminPrompts';
 import OpenEndedAnalysis from './components/OpenEndedAnalysis';
+import BidIntro from './components/BidIntro';
 import BackupManager from './components/BackupManager';
 import AdminAIAssistant from './components/AdminAIAssistant';
 import HelpWidget from './components/HelpWidget';
@@ -867,7 +868,7 @@ const App: React.FC = () => {
     }
   }, [stage, objectiveResponses, currentQIndex, isProbing, messages, candidateInfo, interviewQuestions, openEndedResponse]);
 
-  const handleStartForm = () => setStage(AppStage.BASIC_FORM);
+  const handleStartForm = () => setStage(AppStage.BID_INTRO);
 
   const handleRecoverSession = () => {
     if (!pendingRecovery) return;
@@ -1425,6 +1426,7 @@ const App: React.FC = () => {
       {/* Main Content */}
       <div className="container mx-auto pb-20">
         {stage === AppStage.WELCOME && <WelcomeScreen onStart={handleStartForm} lang={lang} />}
+        {stage === AppStage.BID_INTRO && <BidIntro lang={lang} onContinue={() => setStage(AppStage.BASIC_FORM)} />}
         {stage === AppStage.BASIC_FORM && <BasicInfoForm onSubmit={handleFormSubmit} lang={lang} recruitPostUrl={helpConfig.recruitPostUrl} />}
         {stage === AppStage.INTERVIEW_QUESTIONNAIRE && (
           <ChatInterface
@@ -1504,7 +1506,7 @@ const App: React.FC = () => {
       <BackupManager lang={lang} isOpen={showBackupManager} onClose={() => setShowBackupManager(false)} />
 
       {/* Help Widget — user-facing pages (read-only) */}
-      {(!isAuthenticated || [AppStage.WELCOME, AppStage.BASIC_FORM, AppStage.INTERVIEW_QUESTIONNAIRE, AppStage.OPEN_ENDED_ANALYSIS, AppStage.ANALYZING, AppStage.RESULT].includes(stage)) && (
+      {(!isAuthenticated || [AppStage.WELCOME, AppStage.BID_INTRO, AppStage.BASIC_FORM, AppStage.INTERVIEW_QUESTIONNAIRE, AppStage.OPEN_ENDED_ANALYSIS, AppStage.ANALYZING, AppStage.RESULT].includes(stage)) && (
         <HelpWidget config={helpConfig} lang={lang} />
       )}
       {/* Help Widget — admin pages (editable) */}

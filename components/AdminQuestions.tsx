@@ -403,12 +403,20 @@ const AdminQuestions: React.FC<Props> = ({ questions, dimensionWeights, onUpdate
   };
 
   const handleCopyPrompt = () => {
-    navigator.clipboard.writeText(fullLivePrompt);
+    navigator.clipboard.writeText(fullTextDraft || fullLivePrompt);
     alert(t.promptCopied);
   };
 
+  const handleOpenPromptEditor = () => {
+    setFullTextDraft(fullLivePrompt);
+    setIsPromptEditing(true);
+  };
+
   const handleSavePrompt = () => {
-    onUpdatePrompt({ ...promptConfig, template: fullLivePrompt, sections: editingSections });
+    // Parse full text back to sections before saving
+    const updatedSections = parseFullTextToSections(fullTextDraft, editingSections);
+    setEditingSections(updatedSections);
+    onUpdatePrompt({ ...promptConfig, template: fullTextDraft, sections: updatedSections });
     onUpdateProbingStrategy(editingStrategy);
     setIsPromptEditing(false);
   };
@@ -424,7 +432,7 @@ const AdminQuestions: React.FC<Props> = ({ questions, dimensionWeights, onUpdate
           <p className="text-gray-500 mt-2 font-bold uppercase tracking-widest text-sm italic">{t.questionsSubtitle}</p>
         </div>
         <div className="flex gap-4 items-center">
-          <button onClick={() => setIsPromptEditing(true)} className="px-6 py-3 bg-[#FEF2F2] border border-[#FEE2E2] text-red-600 font-black rounded-2xl hover:bg-red-50 transition shadow-sm flex items-center gap-2 text-xs uppercase tracking-widest">
+          <button onClick={handleOpenPromptEditor} className="px-6 py-3 bg-[#FEF2F2] border border-[#FEE2E2] text-red-600 font-black rounded-2xl hover:bg-red-50 transition shadow-sm flex items-center gap-2 text-xs uppercase tracking-widest">
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg>
             {t.promptManagement}
           </button>
@@ -521,11 +529,7 @@ const AdminQuestions: React.FC<Props> = ({ questions, dimensionWeights, onUpdate
                    </div>
                 </div>
              </div>
-             <div className="px-16 py-8 bg-gray-50/50 border-t flex items-center justify-between">
-                <div className="flex items-center gap-5">
-                   <span className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">{t.methodologyNote}:</span>
-                   <span className="text-sm text-tsinghua-700 font-bold italic bg-white px-5 py-2 rounded-full border border-gray-100 shadow-sm">"{currentQ.methodology_note || (lang === 'EN' ? "Assessing BID core competency." : "该题目旨在考察 BID 核心能力。")}"</span>
-                </div>
+             <div className="px-16 py-8 bg-gray-50/50 border-t flex items-center justify-end">
                 <div className="flex gap-6">
                   <button onClick={() => movePage(-1)} disabled={currentIndex === 0} className="w-16 h-16 bg-white border-2 border-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-tsinghua-500 disabled:opacity-20 shadow-lg active:scale-90"><svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7"/></svg></button>
                   <button onClick={() => movePage(1)} disabled={currentIndex === filteredQuestions.length - 1} className="w-16 h-16 bg-white border-2 border-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-tsinghua-500 disabled:opacity-20 shadow-lg active:scale-90"><svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7"/></svg></button>
@@ -568,279 +572,18 @@ const AdminQuestions: React.FC<Props> = ({ questions, dimensionWeights, onUpdate
               </div>
             )}
 
-            {/* Main content: Left editor + Right preview */}
+            {/* Main content: Full Text Editor */}
             <div className="flex flex-1 overflow-hidden">
-              {/* Left: Section Editor */}
-              <div className="w-1/2 overflow-y-auto custom-scrollbar p-8 space-y-6 border-r">
-
-                {/* ── 📌 角色定位 ── */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-base">📌</span>
-                    <h4 className="text-xs font-black text-gray-600 uppercase tracking-wider">{t.sectionRole}</h4>
-                  </div>
-                  <textarea
-                    value={editingSections.role}
-                    onChange={e => setEditingSections(s => ({ ...s, role: e.target.value }))}
-                    className="w-full bg-gray-50 rounded-2xl p-4 text-xs leading-relaxed outline-none border-2 border-transparent focus:border-tsinghua-100 resize-none font-medium"
-                    rows={5} spellCheck={false}
-                  />
-                </div>
-
-                {/* ── 📚 课程背景 ── */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-base">📚</span>
-                    <h4 className="text-xs font-black text-gray-600 uppercase tracking-wider">{t.sectionCourseBackground}</h4>
-                  </div>
-                  <div className="pl-6 space-y-3">
-                    <div>
-                      <label className="text-[10px] font-bold text-gray-400 mb-1 block">{isCN ? '课程特性' : 'Course Features'}</label>
-                      <textarea value={editingSections.courseBackground} onChange={e => setEditingSections(s => ({ ...s, courseBackground: e.target.value }))}
-                        className="w-full bg-gray-50 rounded-xl p-3 text-xs leading-relaxed outline-none border-2 border-transparent focus:border-tsinghua-100 resize-none" rows={4} spellCheck={false} />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-gray-400 mb-1 block">{t.sectionPressureScenarios}</label>
-                      <textarea value={editingSections.pressureScenarios} onChange={e => setEditingSections(s => ({ ...s, pressureScenarios: e.target.value }))}
-                        className="w-full bg-gray-50 rounded-xl p-3 text-xs leading-relaxed outline-none border-2 border-transparent focus:border-tsinghua-100 resize-none" rows={4} spellCheck={false} />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-gray-400 mb-1 block">{t.sectionCaseLibrary}</label>
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {editingSections.caseLibrary.map((c, i) => (
-                          <span key={i} className="px-3 py-1.5 bg-tsinghua-50 text-tsinghua-700 rounded-full text-[11px] font-bold flex items-center gap-1.5 border border-tsinghua-100">
-                            {c}
-                            <button onClick={() => setEditingSections(s => ({ ...s, caseLibrary: s.caseLibrary.filter((_, idx) => idx !== i) }))} className="text-tsinghua-300 hover:text-red-500 transition text-xs leading-none">&times;</button>
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <input
-                          value={newCaseTag} onChange={e => setNewCaseTag(e.target.value)}
-                          onKeyDown={e => { if (e.key === 'Enter' && newCaseTag.trim()) { setEditingSections(s => ({ ...s, caseLibrary: [...s.caseLibrary, newCaseTag.trim()] })); setNewCaseTag(''); } }}
-                          placeholder={t.addCase} className="flex-1 bg-gray-50 rounded-lg px-3 py-2 text-xs outline-none border-2 border-transparent focus:border-tsinghua-100"
-                        />
-                        <button onClick={() => { if (newCaseTag.trim()) { setEditingSections(s => ({ ...s, caseLibrary: [...s.caseLibrary, newCaseTag.trim()] })); setNewCaseTag(''); } }}
-                          className="px-3 py-2 bg-tsinghua-500 text-white rounded-lg text-xs font-black hover:bg-tsinghua-600 transition">+</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ── 🎯 评估框架 (read-only) ── */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-base">🎯</span>
-                    <h4 className="text-xs font-black text-gray-600 uppercase tracking-wider">{t.sectionEvalFramework}</h4>
-                    <span className="px-2 py-0.5 bg-gray-100 text-gray-400 rounded-full text-[9px] font-bold">{t.sectionAutoSynced}</span>
-                  </div>
-                  <div className="pl-6 flex flex-wrap gap-2">
-                    {dimensionWeights.map(w => (
-                      <span key={w.dimension} className="px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-xl text-[11px] font-bold text-gray-600">
-                        {w.dimension} <span className="text-tsinghua-500">{Math.round(w.weight * 100)}%</span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* ── 📝 选项设计 ── */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-base">📝</span>
-                    <h4 className="text-xs font-black text-gray-600 uppercase tracking-wider">{t.sectionOptionRules}</h4>
-                  </div>
-                  <div className="pl-6 space-y-3">
-                    <div className="flex gap-4 items-center flex-wrap">
-                      <div className="flex items-center gap-2">
-                        <label className="text-[10px] font-bold text-gray-400">{t.optionCount}</label>
-                        <input type="number" min={2} max={10} value={editingSections.scoringFormat.optionCount}
-                          onChange={e => setEditingSections(s => ({ ...s, scoringFormat: { ...s.scoringFormat, optionCount: parseInt(e.target.value) || 5 } }))}
-                          className="w-14 h-8 text-center bg-gray-50 border-2 border-gray-100 rounded-lg font-black text-sm outline-none focus:border-tsinghua-200" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <label className="text-[10px] font-bold text-gray-400">{t.scoreSequence}</label>
-                        <input type="text" value={editingSections.scoringFormat.scoreSequence.join(',')}
-                          onChange={e => {
-                            const nums = e.target.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
-                            if (nums.length) setEditingSections(s => ({ ...s, scoringFormat: { ...s.scoringFormat, scoreSequence: nums } }));
-                          }}
-                          className="w-32 h-8 text-center bg-gray-50 border-2 border-gray-100 rounded-lg font-mono text-xs outline-none focus:border-tsinghua-200" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <label className="text-[10px] font-bold text-gray-400">{t.caseEmbedPercent}</label>
-                        <input type="number" min={0} max={100} value={editingSections.scoringFormat.caseEmbedPercent}
-                          onChange={e => setEditingSections(s => ({ ...s, scoringFormat: { ...s.scoringFormat, caseEmbedPercent: parseInt(e.target.value) || 0 } }))}
-                          className="w-14 h-8 text-center bg-gray-50 border-2 border-gray-100 rounded-lg font-black text-sm outline-none focus:border-tsinghua-200" />
-                        <span className="text-xs text-gray-400">%</span>
-                      </div>
-                    </div>
-                    <textarea value={editingSections.optionDesignRules} onChange={e => setEditingSections(s => ({ ...s, optionDesignRules: e.target.value }))}
-                      className="w-full bg-gray-50 rounded-xl p-3 text-xs leading-relaxed outline-none border-2 border-transparent focus:border-tsinghua-100 resize-none" rows={3} spellCheck={false} />
-                  </div>
-                </div>
-
-                {/* ── 🔍 追问规则与策略 ── */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-base">🔍</span>
-                    <h4 className="text-xs font-black text-gray-600 uppercase tracking-wider">{t.sectionProbingRules}</h4>
-                  </div>
-                  <div className="pl-6 space-y-3">
-                    <textarea value={editingSections.probingDesignRules} onChange={e => setEditingSections(s => ({ ...s, probingDesignRules: e.target.value }))}
-                      className="w-full bg-gray-50 rounded-xl p-3 text-xs leading-relaxed outline-none border-2 border-transparent focus:border-tsinghua-100 resize-none" rows={3} spellCheck={false} />
-                    {/* Inline probing strategy cards (light theme) */}
-                    <div className="grid grid-cols-3 gap-3">
-                      {(['cost', 'assumption', 'evidence'] as StrategyKey[]).map(key => {
-                        const stItem = editingStrategy[key];
-                        return (
-                          <div key={key} className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-tsinghua-200 transition-all">
-                            <div className="flex items-center gap-1.5 mb-2">
-                              <span className="text-lg">{STRATEGY_ICONS[key]}</span>
-                              <input value={isCN ? stItem.label_zh : stItem.label_en}
-                                onChange={e => updateStrategyField(key, isCN ? 'label_zh' : 'label_en', e.target.value)}
-                                className="flex-1 bg-transparent text-xs font-black text-gray-700 outline-none border-b border-transparent focus:border-tsinghua-200 pb-0.5 transition" spellCheck={false} />
-                            </div>
-                            <div className="mb-2">
-                              <span className="text-[9px] font-bold text-gray-400">{isCN ? '追问逻辑' : 'Logic'}</span>
-                              <textarea value={isCN ? stItem.description_zh : stItem.description_en}
-                                onChange={e => updateStrategyField(key, isCN ? 'description_zh' : 'description_en', e.target.value)}
-                                className="w-full bg-white rounded-lg p-2 text-xs text-gray-600 leading-relaxed outline-none resize-none h-28 border border-gray-100 focus:border-tsinghua-200 transition mt-1" spellCheck={false} />
-                            </div>
-                            <div>
-                              <span className="text-[9px] font-bold text-gray-400">{isCN ? '示例追问' : 'Example'}</span>
-                              <textarea value={stItem.prompt_template}
-                                onChange={e => updateStrategyField(key, 'prompt_template', e.target.value)}
-                                className="w-full bg-white rounded-lg p-2 text-xs text-tsinghua-600 leading-relaxed outline-none resize-none h-20 border border-gray-100 focus:border-tsinghua-200 transition mt-1 italic" spellCheck={false} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <p className="text-center text-gray-400 text-[9px] font-medium">
-                      {isCN ? '苏格拉底反诘法：代价(承诺深度) · 假设(元认知) · 证据(实证思维)' : 'Socratic Elenchus: Cost (commitment) · Assumption (metacognition) · Evidence (empirical)'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* ── ✅ 质量检查清单 ── */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-base">✅</span>
-                    <h4 className="text-xs font-black text-gray-600 uppercase tracking-wider">{t.sectionQualityChecks}</h4>
-                  </div>
-                  <div className="pl-6 space-y-1.5">
-                    {editingSections.qualityChecks.map(check => (
-                      <label key={check.id} className="flex items-center gap-2.5 py-1.5 px-3 rounded-lg hover:bg-gray-50 transition cursor-pointer group">
-                        <input type="checkbox" checked={check.enabled}
-                          onChange={e => setEditingSections(s => ({
-                            ...s, qualityChecks: s.qualityChecks.map(c => c.id === check.id ? { ...c, enabled: e.target.checked } : c)
-                          }))}
-                          className="w-4 h-4 rounded border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500 accent-tsinghua-600" />
-                        <span className={`flex-1 text-xs font-medium ${check.enabled ? 'text-gray-700' : 'text-gray-300 line-through'}`}>
-                          {isCN ? check.text_zh : check.text_en}
-                        </span>
-                        {(check.id === 'qc_no_duplicate' || check.id === 'qc_balanced_len') && (
-                          <span className="px-1.5 py-0.5 bg-green-50 text-green-600 rounded text-[8px] font-black uppercase">new</span>
-                        )}
-                        {check.id.startsWith('custom_') && (
-                          <button onClick={e => { e.preventDefault(); setEditingSections(s => ({ ...s, qualityChecks: s.qualityChecks.filter(c => c.id !== check.id) })); }}
-                            className="opacity-0 group-hover:opacity-100 text-red-300 hover:text-red-500 transition text-xs leading-none ml-1">&times;</button>
-                        )}
-                      </label>
-                    ))}
-                    {/* Add new quality check */}
-                    <div className="flex gap-2 mt-2 pl-3">
-                      <input value={newQualityText} onChange={e => setNewQualityText(e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter' && newQualityText.trim()) {
-                            setEditingSections(s => ({ ...s, qualityChecks: [...s.qualityChecks, { id: `custom_qc_${Date.now()}`, text_zh: newQualityText.trim(), text_en: newQualityText.trim(), enabled: true }] }));
-                            setNewQualityText('');
-                          }
-                        }}
-                        placeholder={t.newQualityPlaceholder}
-                        className="flex-1 bg-gray-50 rounded-lg px-3 py-2 text-xs outline-none border-2 border-transparent focus:border-tsinghua-100" />
-                      <button onClick={() => {
-                        if (newQualityText.trim()) {
-                          setEditingSections(s => ({ ...s, qualityChecks: [...s.qualityChecks, { id: `custom_qc_${Date.now()}`, text_zh: newQualityText.trim(), text_en: newQualityText.trim(), enabled: true }] }));
-                          setNewQualityText('');
-                        }
-                      }} className="px-3 py-2 bg-tsinghua-500 text-white rounded-lg text-xs font-black hover:bg-tsinghua-600 transition">+</button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ── 💡 生成示例 (collapsible) ── */}
-                <details className="group">
-                  <summary className="flex items-center gap-2 cursor-pointer mb-2 select-none list-none">
-                    <span className="text-base">💡</span>
-                    <h4 className="text-xs font-black text-gray-600 uppercase tracking-wider">{t.sectionExamples}</h4>
-                    <svg className="w-4 h-4 text-gray-300 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/></svg>
-                  </summary>
-                  <div className="pl-6">
-                    <textarea value={editingSections.examples} onChange={e => setEditingSections(s => ({ ...s, examples: e.target.value }))}
-                      className="w-full bg-gray-50 rounded-xl p-3 text-xs leading-relaxed outline-none border-2 border-transparent focus:border-tsinghua-100 resize-none font-mono" rows={10} spellCheck={false} />
-                  </div>
-                </details>
-
-                {/* ── 📋 生成任务指令 ── */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-base">📋</span>
-                    <h4 className="text-xs font-black text-gray-600 uppercase tracking-wider">{t.sectionInstructions}</h4>
-                  </div>
-                  <div className="pl-6">
-                    <textarea value={editingSections.generationInstructions} onChange={e => setEditingSections(s => ({ ...s, generationInstructions: e.target.value }))}
-                      className="w-full bg-gray-50 rounded-xl p-3 text-xs leading-relaxed outline-none border-2 border-transparent focus:border-tsinghua-100 resize-none" rows={4} spellCheck={false} />
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Right: Live Preview / Full Text Edit */}
-              <div className="w-1/2 bg-gray-50 p-8 flex flex-col space-y-4 overflow-hidden">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    {/* Section / Full Text toggle */}
-                    <div className="flex bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-                      <button onClick={() => {
-                        if (isFullTextEdit) {
-                          // Switching back to section mode → parse full text back into sections
-                          setEditingSections(parseFullTextToSections(fullTextDraft, editingSections));
-                          setIsFullTextEdit(false);
-                        }
-                      }} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest transition ${!isFullTextEdit ? 'bg-tsinghua-600 text-white' : 'text-gray-400 hover:bg-gray-50'}`}>
-                        {t.sectionMode}
-                      </button>
-                      <button onClick={() => {
-                        if (!isFullTextEdit) {
-                          setFullTextDraft(fullLivePrompt);
-                          setIsFullTextEdit(true);
-                        }
-                      }} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest transition ${isFullTextEdit ? 'bg-tsinghua-600 text-white' : 'text-gray-400 hover:bg-gray-50'}`}>
-                        {t.fullTextEdit}
-                      </button>
-                    </div>
-                    {!isFullTextEdit && (
-                      <p className="text-green-600 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
-                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                        {t.syncedWithLib}
-                      </p>
-                    )}
-                  </div>
+              <div className="w-full bg-gray-50 p-8 flex flex-col space-y-4 overflow-hidden">
+                <div className="flex justify-end items-center">
                   <button onClick={handleCopyPrompt} className="px-4 py-2 bg-white border border-gray-200 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-100 transition shadow-sm">{t.copyFullPrompt}</button>
                 </div>
-                {isFullTextEdit ? (
-                  <textarea
-                    value={fullTextDraft}
-                    onChange={e => setFullTextDraft(e.target.value)}
-                    className="flex-1 bg-white rounded-2xl p-6 font-mono text-[11px] leading-relaxed text-gray-700 overflow-y-auto custom-scrollbar border-2 border-tsinghua-200 shadow-inner whitespace-pre-wrap resize-none outline-none focus:border-tsinghua-300"
-                    spellCheck={false}
-                  />
-                ) : (
-                  <div className="flex-1 bg-white rounded-2xl p-6 font-mono text-[10px] leading-relaxed text-gray-500 overflow-y-auto custom-scrollbar border border-gray-100 shadow-inner select-all whitespace-pre-wrap">
-                    {fullLivePrompt}
-                  </div>
-                )}
+                <textarea
+                  value={fullTextDraft}
+                  onChange={e => setFullTextDraft(e.target.value)}
+                  className="flex-1 bg-white rounded-2xl p-6 font-mono text-[11px] leading-relaxed text-gray-700 overflow-y-auto custom-scrollbar border-2 border-tsinghua-200 shadow-inner whitespace-pre-wrap resize-none outline-none focus:border-tsinghua-300"
+                  spellCheck={false}
+                />
               </div>
             </div>
 

@@ -25,7 +25,7 @@ import { supabase, isSupabaseConfigured } from './services/supabaseClient';
 import { initAdaptiveState, getNextQuestion, updateConfidence, shouldContinue, getDimensionSummary } from './services/adaptiveQuestionEngine';
 import { createInitialProfile, updateLiveProfile, calculateProbingBias } from './services/candidateProfiler';
 import ApiSettings from './components/ApiSettings';
-import AdminQuickPreview from './components/AdminQuickPreview';
+
 import { signOut, getSession, onAuthStateChange, AuthUser } from './services/authService';
 import { insertCandidate, fetchCandidates, upsertCandidates } from './services/candidateService';
 import { fetchApiConfig, saveApiConfig, saveSetting, fetchAllSettings } from './services/settingsService';
@@ -626,7 +626,7 @@ const App: React.FC = () => {
 
   // Auto-logout when leaving admin stages
   useEffect(() => {
-    const adminStages = [AppStage.ADMIN_LOGIN, AppStage.ADMIN_LIBRARY, AppStage.ADMIN_CRITERIA, AppStage.ADMIN_QUESTIONS, AppStage.ADMIN_PROMPTS, AppStage.ADMIN_QUICK_PREVIEW];
+    const adminStages = [AppStage.ADMIN_LOGIN, AppStage.ADMIN_LIBRARY, AppStage.ADMIN_CRITERIA, AppStage.ADMIN_QUESTIONS, AppStage.ADMIN_PROMPTS];
     if (!adminStages.includes(stage) && authUser) {
       signOut();
       setAuthUser(null);
@@ -1289,7 +1289,6 @@ const App: React.FC = () => {
                   { stage: AppStage.ADMIN_LIBRARY, label: t.navTalentPool },
                   { stage: AppStage.ADMIN_QUESTIONS, label: t.navQuestions },
                   { stage: AppStage.ADMIN_PROMPTS, label: t.navPrompts },
-                  { stage: AppStage.ADMIN_QUICK_PREVIEW, label: (t as any).navQuickPreview || '预测试' },
                 ].map(item => (
                   <button key={item.stage} onClick={() => handleNavigateAway(item.stage)} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${stage === item.stage ? 'bg-white shadow-md text-tsinghua-600' : 'text-gray-400 hover:text-gray-600'}`}>
                     {item.label}
@@ -1489,7 +1488,7 @@ const App: React.FC = () => {
         {/* ADMIN_CRITERIA removed — weights moved to AdminPrompts */}
         {stage === AppStage.ADMIN_QUESTIONS && <AdminQuestions questions={allQuestions} dimensionWeights={dimensionWeights} onUpdate={handleUpdateQuestions} lang={lang} promptConfig={promptConfig} onUpdatePrompt={handleUpdatePrompt} decisionThresholds={decisionThresholds} apiConfig={apiConfig} probingStrategy={probingStrategy} onUpdateProbingStrategy={handleUpdateProbingStrategy} />}
         {stage === AppStage.ADMIN_PROMPTS && <AdminPrompts promptConfig={promptConfig} onUpdate={handleUpdatePrompt} dimensionWeights={dimensionWeights} onUpdateWeights={handleUpdateWeights} decisionThresholds={decisionThresholds} onUpdateThresholds={handleUpdateThresholds} lang={lang} decisionTree={decisionTree} onUpdateDecisionTree={handleUpdateDecisionTree} probingStrategy={probingStrategy} workflowModules={workflowModules} onUpdateWorkflowModules={handleUpdateWorkflowModules} apiConfig={apiConfig} questionCountConfig={questionCountConfig} onUpdateQuestionCountConfig={handleUpdateQuestionCountConfig} />}
-        {stage === AppStage.ADMIN_QUICK_PREVIEW && <AdminQuickPreview lang={lang} questions={allQuestions} openEndedQuestions={openEndedQuestions} dimensionWeights={dimensionWeights} decisionThresholds={decisionThresholds} promptConfig={promptConfig} apiConfig={apiConfig} onCandidateCreated={handleQuickPreviewCandidateCreated} />}
+
       </div>
 
       {/* API Settings Modal */}
@@ -1510,7 +1509,7 @@ const App: React.FC = () => {
         <HelpWidget config={helpConfig} lang={lang} />
       )}
       {/* Help Widget — admin pages (editable) */}
-      {isAuthenticated && (stage === AppStage.ADMIN_LIBRARY || stage === AppStage.ADMIN_QUESTIONS || stage === AppStage.ADMIN_CRITERIA || stage === AppStage.ADMIN_PROMPTS || stage === AppStage.ADMIN_QUICK_PREVIEW) && (
+      {isAuthenticated && (stage === AppStage.ADMIN_LIBRARY || stage === AppStage.ADMIN_QUESTIONS || stage === AppStage.ADMIN_CRITERIA || stage === AppStage.ADMIN_PROMPTS) && (
         <HelpWidget config={helpConfig} lang={lang} isAdmin onSave={(cfg) => {
           setHelpConfig(cfg);
           localStorage.setItem('tsinghua_help_config', JSON.stringify(cfg));

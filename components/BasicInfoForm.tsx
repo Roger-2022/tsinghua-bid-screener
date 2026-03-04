@@ -35,7 +35,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData, recruitPo
 
   const [formData, setFormData] = useState<CandidateBasicInfo>(initialData || {
     name: '',
-    gender: 'male',
+    gender: '',
     wechat: '',
     identity: 'Undergraduate',
     school: '',
@@ -121,6 +121,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData, recruitPo
                 className="w-full px-5 py-3 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-tsinghua-100 outline-none bg-gray-50/50 font-black"
                 required
               >
+                <option value="" disabled>{lang === 'CN' ? '请选择' : 'Please select'}</option>
                 <option value="male">{(t as any).genderOptions?.male}</option>
                 <option value="female">{(t as any).genderOptions?.female}</option>
               </select>

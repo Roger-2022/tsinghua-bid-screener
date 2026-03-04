@@ -205,6 +205,7 @@ E，暂停参与，1
 证据，有并行高压经验吗？
 备注，看可持续性。`,
   dimensionMethodology: '',
+  designAntiPatterns: '',
   generationInstructions: `- 明确维度：确认要生成哪个维度的问题
 - 选择场景：从 BID 真实场景中选择
 - 嵌入案例：从案例库中选择合适的案例作为情境锚点

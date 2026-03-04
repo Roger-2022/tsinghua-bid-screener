@@ -112,16 +112,17 @@ const AdminQuestions: React.FC<Props> = ({ questions, dimensionWeights, onUpdate
       `三、维度评分方法论\n${sec.dimensionMethodology}`,
       `四、题目设计规则\n\n4.1 基本结构\n- 每题 ${sec.scoringFormat.optionCount} 个选项（A-${lastLetter}）\n- 分值序列：${sec.scoringFormat.scoreSequence.join('/')}\n- 至少 ${sec.scoringFormat.caseEmbedPercent}% 问题嵌入案例库具体案例\n\n4.2 选项设计原则\n${sec.optionDesignRules}\n\n4.3 追问设计原则\n${sec.probingDesignRules}`,
       `五、质量检查清单\n${enabledChecks}`,
+      `六、常见设计错误与反面案例\n${sec.designAntiPatterns}`,
     ].join('\n\n');
   };
 
   // Reverse-parse full text back into sections (best-effort)
   const parseFullTextToSections = (text: string, prev: QuestionPromptSections): QuestionPromptSections => {
     const result = { ...prev };
-    // Split by major section headers (一、二、...五、)
-    const headerPattern = /^(一|二|三|四|五)、.+/m;
+    // Split by major section headers (一、二、...六、)
+    const headerPattern = /^(一|二|三|四|五|六)、.+/m;
     const parts: Record<string, string> = {};
-    const segments = text.split(/\n\n(?=(一|二|三|四|五)、)/);
+    const segments = text.split(/\n\n(?=(一|二|三|四|五|六)、)/);
     let currentKey = '';
     for (const seg of segments) {
       const hMatch = seg.match(headerPattern);
@@ -181,6 +182,9 @@ const AdminQuestions: React.FC<Props> = ({ questions, dimensionWeights, onUpdate
       }));
       result.qualityChecks = [...updatedChecks, ...newCustom];
     }
+
+    // 六 → designAntiPatterns
+    if (parts['六'] !== undefined) result.designAntiPatterns = parts['六'];
 
     return result;
   };

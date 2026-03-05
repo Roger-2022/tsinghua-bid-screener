@@ -11,10 +11,10 @@ import AdminQuestions from './components/AdminQuestions';
 import AdminLogin from './components/AdminLogin';
 import AdminPrompts from './components/AdminPrompts';
 import OpenEndedAnalysis from './components/OpenEndedAnalysis';
-import BidIntro from './components/BidIntro';
 import BackupManager from './components/BackupManager';
 import AdminAIAssistant from './components/AdminAIAssistant';
 import HelpWidget from './components/HelpWidget';
+import QuestionReviewer from './components/QuestionReviewer';
 import { translations } from './i18n';
 import { generateFinalAssessment, DEFAULT_LEGACY_MODELS } from './services/aiService';
 import { EXAMPLE_CANDIDATES, isExampleCandidate } from './data/exampleCandidates';
@@ -25,7 +25,7 @@ import { supabase, isSupabaseConfigured } from './services/supabaseClient';
 import { initAdaptiveState, getNextQuestion, updateConfidence, shouldContinue, getDimensionSummary } from './services/adaptiveQuestionEngine';
 import { createInitialProfile, updateLiveProfile, calculateProbingBias } from './services/candidateProfiler';
 import ApiSettings from './components/ApiSettings';
-
+import AdminQuickPreview from './components/AdminQuickPreview';
 import { signOut, getSession, onAuthStateChange, AuthUser } from './services/authService';
 import { insertCandidate, fetchCandidates, upsertCandidates } from './services/candidateService';
 import { fetchApiConfig, saveApiConfig, saveSetting, fetchAllSettings } from './services/settingsService';
@@ -206,8 +206,6 @@ E，暂停参与，1
 假设，你如何评估长期回报？
 证据，有并行高压经验吗？
 备注，看可持续性。`,
-  dimensionMethodology: '',
-  designAntiPatterns: '',
   generationInstructions: `- 明确维度：确认要生成哪个维度的问题
 - 选择场景：从 BID 真实场景中选择
 - 嵌入案例：从案例库中选择合适的案例作为情境锚点
@@ -630,7 +628,7 @@ const App: React.FC = () => {
 
   // Auto-logout when leaving admin stages
   useEffect(() => {
-    const adminStages = [AppStage.ADMIN_LOGIN, AppStage.ADMIN_LIBRARY, AppStage.ADMIN_CRITERIA, AppStage.ADMIN_QUESTIONS, AppStage.ADMIN_PROMPTS];
+    const adminStages = [AppStage.ADMIN_LOGIN, AppStage.ADMIN_LIBRARY, AppStage.ADMIN_CRITERIA, AppStage.ADMIN_QUESTIONS, AppStage.ADMIN_PROMPTS, AppStage.ADMIN_QUICK_PREVIEW, AppStage.ADMIN_QUESTION_REVIEW];
     if (!adminStages.includes(stage) && authUser) {
       signOut();
       setAuthUser(null);
@@ -876,7 +874,7 @@ const App: React.FC = () => {
     }
   }, [stage, objectiveResponses, currentQIndex, isProbing, messages, candidateInfo, interviewQuestions, openEndedResponse]);
 
-  const handleStartForm = () => setStage(AppStage.BID_INTRO);
+  const handleStartForm = () => setStage(AppStage.BASIC_FORM);
 
   const handleRecoverSession = () => {
     if (!pendingRecovery) return;
@@ -1296,7 +1294,9 @@ const App: React.FC = () => {
                 {[
                   { stage: AppStage.ADMIN_LIBRARY, label: t.navTalentPool },
                   { stage: AppStage.ADMIN_QUESTIONS, label: t.navQuestions },
+                  { stage: AppStage.ADMIN_QUESTION_REVIEW, label: '题目审查' },
                   { stage: AppStage.ADMIN_PROMPTS, label: t.navPrompts },
+                  { stage: AppStage.ADMIN_QUICK_PREVIEW, label: (t as any).navQuickPreview || '预测试' },
                 ].map(item => (
                   <button key={item.stage} onClick={() => handleNavigateAway(item.stage)} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${stage === item.stage ? 'bg-white shadow-md text-tsinghua-600' : 'text-gray-400 hover:text-gray-600'}`}>
                     {item.label}
@@ -1433,7 +1433,6 @@ const App: React.FC = () => {
       {/* Main Content */}
       <div className="container mx-auto pb-20">
         {stage === AppStage.WELCOME && <WelcomeScreen onStart={handleStartForm} lang={lang} />}
-        {stage === AppStage.BID_INTRO && <BidIntro lang={lang} onContinue={() => setStage(AppStage.BASIC_FORM)} />}
         {stage === AppStage.BASIC_FORM && <BasicInfoForm onSubmit={handleFormSubmit} lang={lang} recruitPostUrl={helpConfig.recruitPostUrl} />}
         {stage === AppStage.INTERVIEW_QUESTIONNAIRE && (
           <ChatInterface
@@ -1496,7 +1495,8 @@ const App: React.FC = () => {
         {/* ADMIN_CRITERIA removed — weights moved to AdminPrompts */}
         {stage === AppStage.ADMIN_QUESTIONS && <AdminQuestions questions={allQuestions} dimensionWeights={dimensionWeights} onUpdate={handleUpdateQuestions} lang={lang} promptConfig={promptConfig} onUpdatePrompt={handleUpdatePrompt} decisionThresholds={decisionThresholds} apiConfig={apiConfig} probingStrategy={probingStrategy} onUpdateProbingStrategy={handleUpdateProbingStrategy} />}
         {stage === AppStage.ADMIN_PROMPTS && <AdminPrompts promptConfig={promptConfig} onUpdate={handleUpdatePrompt} dimensionWeights={dimensionWeights} onUpdateWeights={handleUpdateWeights} decisionThresholds={decisionThresholds} onUpdateThresholds={handleUpdateThresholds} lang={lang} decisionTree={decisionTree} onUpdateDecisionTree={handleUpdateDecisionTree} probingStrategy={probingStrategy} workflowModules={workflowModules} onUpdateWorkflowModules={handleUpdateWorkflowModules} apiConfig={apiConfig} questionCountConfig={questionCountConfig} onUpdateQuestionCountConfig={handleUpdateQuestionCountConfig} />}
-
+        {stage === AppStage.ADMIN_QUESTION_REVIEW && <QuestionReviewer questions={allQuestions} />}
+        {stage === AppStage.ADMIN_QUICK_PREVIEW && <AdminQuickPreview lang={lang} questions={allQuestions} openEndedQuestions={openEndedQuestions} dimensionWeights={dimensionWeights} decisionThresholds={decisionThresholds} promptConfig={promptConfig} apiConfig={apiConfig} onCandidateCreated={handleQuickPreviewCandidateCreated} />}
       </div>
 
       {/* API Settings Modal */}
@@ -1513,11 +1513,11 @@ const App: React.FC = () => {
       <BackupManager lang={lang} isOpen={showBackupManager} onClose={() => setShowBackupManager(false)} />
 
       {/* Help Widget — user-facing pages (read-only) */}
-      {(!isAuthenticated || [AppStage.WELCOME, AppStage.BID_INTRO, AppStage.BASIC_FORM, AppStage.INTERVIEW_QUESTIONNAIRE, AppStage.OPEN_ENDED_ANALYSIS, AppStage.ANALYZING, AppStage.RESULT].includes(stage)) && (
+      {(!isAuthenticated || [AppStage.WELCOME, AppStage.BASIC_FORM, AppStage.INTERVIEW_QUESTIONNAIRE, AppStage.OPEN_ENDED_ANALYSIS, AppStage.ANALYZING, AppStage.RESULT].includes(stage)) && (
         <HelpWidget config={helpConfig} lang={lang} />
       )}
       {/* Help Widget — admin pages (editable) */}
-      {isAuthenticated && (stage === AppStage.ADMIN_LIBRARY || stage === AppStage.ADMIN_QUESTIONS || stage === AppStage.ADMIN_CRITERIA || stage === AppStage.ADMIN_PROMPTS) && (
+      {isAuthenticated && (stage === AppStage.ADMIN_LIBRARY || stage === AppStage.ADMIN_QUESTIONS || stage === AppStage.ADMIN_CRITERIA || stage === AppStage.ADMIN_PROMPTS || stage === AppStage.ADMIN_QUICK_PREVIEW || stage === AppStage.ADMIN_QUESTION_REVIEW) && (
         <HelpWidget config={helpConfig} lang={lang} isAdmin onSave={(cfg) => {
           setHelpConfig(cfg);
           localStorage.setItem('tsinghua_help_config', JSON.stringify(cfg));

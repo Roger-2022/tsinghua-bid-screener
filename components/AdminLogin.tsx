@@ -11,7 +11,7 @@ interface Props {
 const AdminLogin: React.FC<Props> = ({ onLogin, lang }) => {
   const t = translations[lang];
   const [email, setEmail] = useState('admin@mails.tsinghua.edu.cn');
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState('BIDBIDBID88');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 

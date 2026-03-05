@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { CandidateRecord, Language, CandidateProfile, ImportSummary, NumericDecisionThresholds, DimensionWeight } from '../types';
+import { CandidateRecord, Language, CandidateProfile, ImportSummary, FeedbackRecord, NumericDecisionThresholds, DimensionWeight } from '../types';
 import ResultView from './ResultView';
 import { exportToCSV } from '../services/exportService';
 import { translations } from '../i18n';
@@ -11,6 +11,7 @@ import { deleteCandidate } from '../services/candidateService';
 import ExportColumnSelector from './ExportColumnSelector';
 import ImportInfoPanel from './ImportInfoPanel';
 import BatchCalibrationPanel from './BatchCalibrationPanel';
+import { saveFeedback, getFeedbackForCandidate, getFeedbackStats } from '../services/feedbackService';
 
 interface LiveProgress {
   name: string;
@@ -45,7 +46,12 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
   const selected = candidates.find(c => c.candidate_id === selectedId);
   const [editRecord, setEditRecord] = useState<CandidateRecord | null>(null);
   const [liveProgress, setLiveProgress] = useState<LiveProgress | null>(null);
+  // AI Native: Feedback + Calibration
   const [showCalibration, setShowCalibration] = useState(false);
+  const [feedbackOverride, setFeedbackOverride] = useState<string | null>(null); // candidate_id being overridden
+  const [overrideDecision, setOverrideDecision] = useState<string>('');
+  const [overrideReason, setOverrideReason] = useState('');
+  const feedbackStats = getFeedbackStats();
 
   // Poll localStorage for live interview progress
   useEffect(() => {
@@ -292,6 +298,12 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
           <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-bold">
             {isCN ? '拒绝' : 'Reject'}: {stats.reject}
           </span>
+          {/* AI Native: Feedback stats + Calibration */}
+          {feedbackStats.totalReviewed > 0 && (
+            <span className="px-2 py-0.5 bg-tsinghua-50 text-tsinghua-600 rounded-full font-bold">
+              {(t as any).feedback_agree_rate}: {Math.round(feedbackStats.agreeRate * 100)}% ({feedbackStats.totalReviewed})
+            </span>
+          )}
           <button
             onClick={() => setShowCalibration(true)}
             className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full font-bold hover:bg-blue-100 transition-colors"
@@ -390,6 +402,37 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
                       </span>
                     ))}
                   </div>
+                  {/* AI Native: Feedback buttons */}
+                  {!isExampleCandidate(c.candidate_id) && (
+                    <div className="flex gap-1 mt-2" onClick={e => e.stopPropagation()}>
+                      {(() => {
+                        const fb = getFeedbackForCandidate(c.candidate_id);
+                        if (fb) {
+                          return (
+                            <span className="text-[8px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-bold">
+                              {fb.adminDecision === 'agree' ? '✓ ' : '⟳ '}{fb.adminDecision}
+                            </span>
+                          );
+                        }
+                        return (
+                          <>
+                            <button
+                              onClick={() => { saveFeedback(c.candidate_id, c.status, 'agree'); setSelectedId(c.candidate_id); }}
+                              className="text-[8px] px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded font-bold hover:bg-emerald-100"
+                            >
+                              {(t as any).feedback_agree}
+                            </button>
+                            <button
+                              onClick={() => { setFeedbackOverride(c.candidate_id); setOverrideDecision(''); setOverrideReason(''); }}
+                              className="text-[8px] px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded font-bold hover:bg-amber-100"
+                            >
+                              {(t as any).feedback_override}
+                            </button>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </button>
                 {!isExampleCandidate(c.candidate_id) && (
                   <button
@@ -832,6 +875,54 @@ const AdminLibrary: React.FC<Props> = ({ candidates, lang, onUpdate, decisionThr
           }}
           onClose={() => setShowImportModal(false)}
         />
+      )}
+
+      {/* AI Native: Feedback Override Modal */}
+      {feedbackOverride && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setFeedbackOverride(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-gray-900">{(t as any).feedback_override_to}</h3>
+            <div className="flex gap-2">
+              {['pass', 'hold', 'reject'].map(d => (
+                <button
+                  key={d}
+                  onClick={() => setOverrideDecision(d)}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${overrideDecision === d ? 'bg-tsinghua-500 text-white border-tsinghua-500' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
+                >
+                  {d.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <input
+              type="text"
+              value={overrideReason}
+              onChange={e => setOverrideReason(e.target.value)}
+              placeholder={(t as any).feedback_override_reason}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-tsinghua-200"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setFeedbackOverride(null)}
+                className="flex-1 py-2 text-xs font-bold bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
+              >
+                {isCN ? '取消' : 'Cancel'}
+              </button>
+              <button
+                onClick={() => {
+                  if (overrideDecision) {
+                    const c = candidates.find(c => c.candidate_id === feedbackOverride);
+                    if (c) saveFeedback(feedbackOverride, c.status, `override_${overrideDecision}` as FeedbackRecord['adminDecision'], overrideReason || undefined);
+                    setFeedbackOverride(null);
+                  }
+                }}
+                disabled={!overrideDecision}
+                className="flex-1 py-2 text-xs font-bold bg-tsinghua-500 text-white rounded-lg hover:bg-tsinghua-600 disabled:opacity-50"
+              >
+                {isCN ? '确认覆盖' : 'Confirm Override'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* AI Native: Batch Calibration Panel */}

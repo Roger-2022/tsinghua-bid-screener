@@ -35,7 +35,7 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData, recruitPo
 
   const [formData, setFormData] = useState<CandidateBasicInfo>(initialData || {
     name: '',
-    gender: '',
+    gender: 'male',
     wechat: '',
     identity: 'Undergraduate',
     school: '',
@@ -121,7 +121,6 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData, recruitPo
                 className="w-full px-5 py-3 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-tsinghua-100 outline-none bg-gray-50/50 font-black"
                 required
               >
-                <option value="" disabled>{lang === 'CN' ? '请选择' : 'Please select'}</option>
                 <option value="male">{(t as any).genderOptions?.male}</option>
                 <option value="female">{(t as any).genderOptions?.female}</option>
               </select>
@@ -404,6 +403,46 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData, recruitPo
               className="w-full px-5 py-4 border border-gray-100 rounded-3xl resize-none focus:ring-4 focus:ring-tsinghua-100 outline-none bg-gray-50/50 font-medium"
               required
             />
+          </div>
+
+          {/* Checkboxes */}
+          <div className="flex flex-col gap-4 py-4 px-2">
+            <label className="flex items-center gap-4 cursor-pointer group">
+              <input
+                type="checkbox"
+                name="offlineInterview"
+                checked={formData.offlineInterview}
+                onChange={handleChange}
+                className="w-6 h-6 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
+              />
+              <span className="text-sm font-bold text-gray-700 group-hover:text-tsinghua-600 transition">
+                {t.offlineInterview} <span className="text-red-400">*</span>
+              </span>
+            </label>
+            <label className="flex items-center gap-4 cursor-pointer group">
+              <input
+                type="checkbox"
+                name="homeworkWillingness"
+                checked={formData.homeworkWillingness}
+                onChange={handleChange}
+                className="w-6 h-6 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
+              />
+              <span className="text-sm font-bold text-gray-700 group-hover:text-tsinghua-600 transition">
+                {t.willingness} <span className="text-red-400">*</span>
+              </span>
+            </label>
+            <label className="flex items-center gap-4 cursor-pointer group">
+              <input
+                type="checkbox"
+                name="leaderWillingness"
+                checked={formData.leaderWillingness}
+                onChange={handleChange}
+                className="w-6 h-6 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
+              />
+              <span className="text-sm font-bold text-gray-700 group-hover:text-tsinghua-600 transition">
+                {t.leader} <span className="text-red-400">*</span>
+              </span>
+            </label>
           </div>
 
           {/* Submit */}

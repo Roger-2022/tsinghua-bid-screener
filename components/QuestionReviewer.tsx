@@ -3,6 +3,9 @@ import { QuestionTemplate } from '../types';
 import { EXAMPLE_QUESTIONS } from '../data/exampleQuestions';
 import { ORIGINAL_MOTIVATION_QUESTIONS } from '../data/originalMotivationQuestions';
 import { ORIGINAL_COMMITMENT_QUESTIONS } from '../data/originalCommitmentQuestions';
+import { ORIGINAL_LOGIC_QUESTIONS } from '../data/originalLogicQuestions';
+import { ORIGINAL_RESILIENCE_QUESTIONS } from '../data/originalResilienceQuestions';
+import { ORIGINAL_INNOVATION_QUESTIONS } from '../data/originalInnovationQuestions';
 
 interface Props {
   questions: QuestionTemplate[];
@@ -12,6 +15,9 @@ const DIMENSION_ORDER = ['真实动机', '逻辑闭环', '反思与韧性', '创
 
 const DIFF_DIMENSIONS: Record<string, QuestionTemplate[]> = {
   '真实动机': ORIGINAL_MOTIVATION_QUESTIONS,
+  '逻辑闭环': ORIGINAL_LOGIC_QUESTIONS,
+  '反思与韧性': ORIGINAL_RESILIENCE_QUESTIONS,
+  '创新潜质': ORIGINAL_INNOVATION_QUESTIONS,
   '投入度': ORIGINAL_COMMITMENT_QUESTIONS,
 };
 

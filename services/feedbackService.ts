@@ -1,7 +1,9 @@
 
 import { FeedbackRecord, FeedbackStats } from '../types';
+import { saveSetting, fetchSetting } from './settingsService';
 
 const STORAGE_KEY = 'tsinghua_feedback';
+const SETTING_ID = 'feedback';
 
 const loadFeedback = (): FeedbackRecord[] => {
   try {
@@ -14,6 +16,38 @@ const loadFeedback = (): FeedbackRecord[] => {
 
 const saveFeedbackList = (list: FeedbackRecord[]): void => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  // Async sync to backend (fire-and-forget)
+  saveSetting(SETTING_ID, list).catch(e =>
+    console.warn('[Feedback] Backend sync failed:', e)
+  );
+};
+
+/** Fetch feedback from backend, merge with localStorage */
+export const fetchFeedbackFromBackend = async (): Promise<FeedbackRecord[]> => {
+  const local = loadFeedback();
+  try {
+    const remote = await fetchSetting<FeedbackRecord[]>(SETTING_ID);
+    if (!remote || !Array.isArray(remote)) return local;
+
+    // Merge: use the version with more entries, or if same length, prefer remote (newer)
+    const remoteMap = new Map<string, FeedbackRecord>();
+    remote.forEach(r => remoteMap.set(r.candidateId, r));
+    local.forEach(l => {
+      const existing = remoteMap.get(l.candidateId);
+      // Keep whichever has the later timestamp
+      if (!existing || l.timestamp > existing.timestamp) {
+        remoteMap.set(l.candidateId, l);
+      }
+    });
+
+    const merged = Array.from(remoteMap.values());
+    // Update localStorage cache
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    return merged;
+  } catch (e) {
+    console.warn('[Feedback] Backend fetch failed, using localStorage:', e);
+    return local;
+  }
 };
 
 export const saveFeedback = (

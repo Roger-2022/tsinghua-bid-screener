@@ -29,6 +29,8 @@ import ApiSettings from './components/ApiSettings';
 import { signOut, getSession, onAuthStateChange, AuthUser } from './services/authService';
 import { insertCandidate, fetchCandidates, upsertCandidates } from './services/candidateService';
 import { fetchApiConfig, saveApiConfig, saveSetting, fetchAllSettings } from './services/settingsService';
+import { fetchFeedbackFromBackend } from './services/feedbackService';
+import { fetchVersionsFromBackend } from './services/promptVersionService';
 
 const DEFAULT_PROMPT_TEMPLATE = `一、角色定位
 你是 BID 商业模式工坊的招生筛选官。你的任务是生成高质量的筛选问题，用于评估申请者是否具备参与高强度商业模式训练的潜质。
@@ -687,6 +689,10 @@ const App: React.FC = () => {
         }
       }
     });
+
+    // Also sync feedback & prompt versions from backend → localStorage
+    fetchFeedbackFromBackend().catch(e => console.warn('[Init] Feedback sync failed:', e));
+    fetchVersionsFromBackend().catch(e => console.warn('[Init] PromptVersions sync failed:', e));
   }, []);
 
   useEffect(() => {

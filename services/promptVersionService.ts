@@ -1,7 +1,9 @@
 
 import { PipelineStage, PromptVersion } from '../types';
+import { saveSetting, fetchSetting } from './settingsService';
 
 const STORAGE_KEY = 'tsinghua_prompt_versions';
+const SETTING_ID = 'prompt_versions';
 const MAX_VERSIONS = 50;
 
 const loadVersions = (): PromptVersion[] => {
@@ -15,6 +17,37 @@ const loadVersions = (): PromptVersion[] => {
 
 const saveVersions = (versions: PromptVersion[]): void => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(versions));
+  // Async sync to backend (fire-and-forget)
+  saveSetting(SETTING_ID, versions).catch(e =>
+    console.warn('[PromptVersions] Backend sync failed:', e)
+  );
+};
+
+/** Fetch prompt versions from backend, merge with localStorage */
+export const fetchVersionsFromBackend = async (): Promise<PromptVersion[]> => {
+  const local = loadVersions();
+  try {
+    const remote = await fetchSetting<PromptVersion[]>(SETTING_ID);
+    if (!remote || !Array.isArray(remote)) return local;
+
+    // Merge by id: combine both sources, keep latest by timestamp
+    const mergedMap = new Map<string, PromptVersion>();
+    remote.forEach(v => mergedMap.set(v.id, v));
+    local.forEach(v => {
+      if (!mergedMap.has(v.id)) mergedMap.set(v.id, v);
+    });
+
+    const merged = Array.from(mergedMap.values())
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, MAX_VERSIONS);
+
+    // Update localStorage cache
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    return merged;
+  } catch (e) {
+    console.warn('[PromptVersions] Backend fetch failed, using localStorage:', e);
+    return local;
+  }
 };
 
 export const savePromptVersion = (

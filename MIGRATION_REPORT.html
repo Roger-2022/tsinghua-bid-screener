@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>招生筛选系统迁移报告</title>
+<style>
+  :root {
+    --purple: #660874;
+    --purple-light: #f3e8f9;
+    --purple-dark: #4a0654;
+    --green: #16a34a;
+    --green-light: #dcfce7;
+    --amber: #d97706;
+    --amber-light: #fef3c7;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --blue: #2563eb;
+    --blue-light: #dbeafe;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-500: #6b7280;
+    --gray-700: #374151;
+    --gray-900: #111827;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-900);
+    line-height: 1.7;
+    padding: 2rem;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  header {
+    background: linear-gradient(135deg, var(--purple), var(--purple-dark));
+    color: #fff;
+    padding: 2.5rem 2rem;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 24px rgba(102,8,116,.25);
+  }
+  header h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: .5rem; }
+  header p { opacity: .85; font-size: .95rem; }
+  header .meta { margin-top: 1rem; display: flex; gap: 1.5rem; font-size: .8rem; opacity: .7; }
+
+  section {
+    background: #fff;
+    border-radius: .75rem;
+    padding: 1.75rem 2rem;
+    margin-bottom: 1.25rem;
+    border: 1px solid var(--gray-200);
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  section h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--purple);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  section h2 .icon {
+    display: inline-flex;
+    width: 28px; height: 28px;
+    align-items: center; justify-content: center;
+    background: var(--purple-light);
+    border-radius: 6px;
+    font-size: 1rem;
+  }
+  h3 {
+    font-size: .95rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin: 1rem 0 .5rem;
+  }
+  p, li { font-size: .9rem; color: var(--gray-700); }
+  ul, ol { padding-left: 1.25rem; }
+  li { margin-bottom: .35rem; }
+
+  .tree { font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: .82rem; line-height: 1.8; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: .5rem; padding: 1rem 1.25rem; overflow-x: auto; white-space: pre; }
+  .tree .new { color: var(--green); font-weight: 600; }
+  .tree .mod { color: var(--amber); font-weight: 600; }
+  .tree .dim { color: var(--gray-500); }
+
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; margin: .75rem 0; }
+  th { background: var(--gray-100); text-align: left; padding: .6rem .75rem; font-weight: 600; border-bottom: 2px solid var(--gray-200); color: var(--gray-700); }
+  td { padding: .55rem .75rem; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
+  tr:hover td { background: var(--gray-50); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: .25rem;
+    padding: .15rem .55rem;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .badge-green  { background: var(--green-light);  color: var(--green); }
+  .badge-amber  { background: var(--amber-light);  color: var(--amber); }
+  .badge-red    { background: var(--red-light);     color: var(--red); }
+  .badge-blue   { background: var(--blue-light);    color: var(--blue); }
+  .badge-purple { background: var(--purple-light);  color: var(--purple); }
+
+  .code { font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: .82rem; background: var(--gray-100); padding: .15rem .4rem; border-radius: 4px; }
+
+  .callout {
+    padding: 1rem 1.25rem;
+    border-radius: .5rem;
+    margin: .75rem 0;
+    font-size: .85rem;
+    display: flex;
+    gap: .75rem;
+  }
+  .callout-warn  { background: var(--amber-light); border-left: 4px solid var(--amber); }
+  .callout-info  { background: var(--blue-light);  border-left: 4px solid var(--blue); }
+  .callout-ok    { background: var(--green-light); border-left: 4px solid var(--green); }
+  .callout .emoji { font-size: 1.1rem; flex-shrink: 0; }
+
+  .api-route {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .4rem 0;
+  }
+  .method {
+    display: inline-block;
+    width: 52px;
+    text-align: center;
+    padding: .15rem .35rem;
+    border-radius: 4px;
+    font-size: .7rem;
+    font-weight: 800;
+    font-family: monospace;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .method-get    { background: var(--green); }
+  .method-post   { background: var(--blue); }
+  .method-put    { background: var(--amber); }
+  .method-delete { background: var(--red); }
+  .api-path { font-family: monospace; font-size: .82rem; color: var(--gray-700); }
+  .api-desc { font-size: .8rem; color: var(--gray-500); margin-left: auto; }
+
+  .flow-diagram {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+  }
+  .flow-step {
+    background: var(--purple-light);
+    border: 1px solid #e0c4e8;
+    padding: .5rem 1rem;
+    border-radius: .5rem;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--purple);
+    text-align: center;
+    min-width: 100px;
+  }
+  .flow-arrow { color: var(--gray-300); font-size: 1.2rem; flex-shrink: 0; }
+
+  footer {
+    text-align: center;
+    padding: 2rem 0 1rem;
+    font-size: .78rem;
+    color: var(--gray-500);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>招生筛选系统 &rarr; 商业模式工坊 迁移报告</h1>
+  <p>tsinghua-sem-ai-screener 整合进 business-model-workshop 的完整记录</p>
+  <div class="meta">
+    <span>日期: 2026-03-05</span>
+    <span>迁移方式: 子模块整合 + 后端重构</span>
+    <span>状态: 全部完成</span>
+  </div>
+</header>
+
+<!-- ==================== 1. Overview ==================== -->
+<section>
+  <h2><span class="icon">&#128203;</span> 一、迁移概览</h2>
+  <p>将独立运行的招生筛选项目（tsinghua-sem-ai-screener）以 <strong>screener/</strong> 子目录的形式整合进商业模式工坊。同时将原来的 Supabase 后端替换为项目自带的 Express + SQLite 后端。</p>
+
+  <div class="callout callout-ok">
+    <span class="emoji">&#9989;</span>
+    <div>
+      <strong>迁移结果：</strong>导航栏右侧新增「招生」入口，点击可进入完整的招生筛选系统（欢迎页 &rarr; BID 介绍 &rarr; 表单 &rarr; 面试 &rarr; 结果），管理员登录后可进入后台。12 个配置项全部实现后端持久化。
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 2. File Structure ==================== -->
+<section>
+  <h2><span class="icon">&#128193;</span> 二、迁移后文件结构</h2>
+  <p>图例：<span class="badge badge-green">NEW 新增</span> <span class="badge badge-amber">MOD 修改</span> <span class="badge badge-purple">原样复制</span></p>
+
+  <div class="tree">business-model-workshop-20260302-133400/
+<span class="mod">├── App.tsx</span>                        <span class="dim">← 新增 ScreenerApp 导航入口 + 视图渲染</span>
+<span class="mod">├── types.ts</span>                      <span class="dim">← AppView enum 新增 Screener</span>
+<span class="mod">├── index.html</span>                    <span class="dim">← 合并 Tailwind 配置、字体、importmap</span>
+<span class="mod">├── package.json</span>                  <span class="dim">← 新增依赖 @google/genai, recharts</span>
+<span class="mod">├── .env.local</span>                    <span class="dim">← VITE_BACKEND_URL=http://localhost:3001</span>
+│
+├── backend/
+<span class="mod">│   ├── db.js</span>                      <span class="dim">← 新增 4 张 screener 数据表 + CRUD 对象</span>
+<span class="mod">│   ├── server.js</span>                  <span class="dim">← 挂载 screenerRoutes</span>
+<span class="new">│   └── screenerRoutes.js</span>          <span class="dim">← 新建：全部 screener API 路由</span>
+│
+<span class="new">├── screener/</span>                       <span class="dim">← 新建子目录（招生筛选系统）</span>
+<span class="new">│   ├── ScreenerApp.tsx</span>            <span class="dim">← 原 App.tsx，重命名 + 改 import</span>
+│   ├── types.ts                   <span class="dim">← 原样</span>
+│   ├── i18n.ts                    <span class="dim">← 原样</span>
+│   │
+│   ├── components/                <span class="dim">← 20 个组件（原样复制）</span>
+│   │   ├── AdminAIAssistant.tsx
+│   │   ├── AdminCriteria.tsx
+│   │   ├── AdminLibrary.tsx
+│   │   ├── AdminLogin.tsx
+│   │   ├── AdminPrompts.tsx
+│   │   ├── AdminQuestions.tsx
+│   │   ├── AdminQuickPreview.tsx
+│   │   ├── ApiSettings.tsx
+│   │   ├── BackupManager.tsx
+│   │   ├── BasicInfoForm.tsx
+│   │   ├── BatchCalibrationPanel.tsx
+│   │   ├── BidIntro.tsx
+│   │   ├── ChatInterface.tsx
+│   │   ├── DecisionTreeViz.tsx
+│   │   ├── ExportColumnSelector.tsx
+│   │   ├── HelpWidget.tsx
+│   │   ├── ImportInfoPanel.tsx
+│   │   ├── OpenEndedAnalysis.tsx
+│   │   ├── ResultView.tsx
+│   │   └── WelcomeScreen.tsx
+│   │
+│   ├── services/                  <span class="dim">← 14 个服务（4 个重写，其余原样）</span>
+<span class="mod">│   │   ├── supabaseClient.ts</span>      <span class="dim">← 重写为通用 apiFetch() 客户端</span>
+<span class="mod">│   │   ├── settingsService.ts</span>     <span class="dim">← 重写：fetchSetting / saveSetting</span>
+<span class="mod">│   │   ├── candidateService.ts</span>    <span class="dim">← 重写：CRUD 走 Express API</span>
+<span class="mod">│   │   ├── backupService.ts</span>       <span class="dim">← 重写：快照同步 Express API</span>
+<span class="mod">│   │   ├── feedbackService.ts</span>     <span class="dim">← 重写：管理员备注同步后端</span>
+<span class="mod">│   │   ├── promptVersionService.ts</span><span class="dim">← 重写：提示词版本同步后端</span>
+<span class="mod">│   │   ├── authService.ts</span>         <span class="dim">← 重写：本地认证（无 Supabase）</span>
+│   │   ├── aiService.ts           <span class="dim">← 原样</span>
+│   │   ├── llmService.ts          <span class="dim">← 原样</span>
+│   │   ├── adaptiveQuestionEngine.ts
+│   │   ├── candidateProfiler.ts
+│   │   ├── interviewPipeline.ts
+│   │   ├── promptAssembler.ts
+│   │   └── scoringService.ts
+│   │
+│   └── data/                      <span class="dim">← 2 个数据文件（原样复制）</span>
+│       ├── exampleCandidates.ts
+│       └── exampleQuestions.ts
+│
+├── QUICK_DEPLOY.sh                <span class="dim">← 一键部署脚本</span>
+├── upload-to-server.sh            <span class="dim">← rsync 上传脚本</span>
+└── ...</div>
+</section>
+
+<!-- ==================== 3. Backend ==================== -->
+<section>
+  <h2><span class="icon">&#128421;</span> 三、后端架构（Supabase &rarr; Express + SQLite）</h2>
+
+  <h3>3.1 新增 SQLite 数据表（backend/db.js）</h3>
+  <table>
+    <tr><th>表名</th><th>用途</th><th>主要字段</th></tr>
+    <tr>
+      <td><span class="code">screener_help_config</span></td>
+      <td>帮助信息（营业时间、联系方式、备注）</td>
+      <td>id (固定'default'), hours, contact, notes</td>
+    </tr>
+    <tr>
+      <td><span class="code">screener_snapshots</span></td>
+      <td>版本备份</td>
+      <td>id, label, timestamp, data (JSON)</td>
+    </tr>
+    <tr>
+      <td><span class="code">screener_settings</span></td>
+      <td>通用键值存储（API 配置、权重、阈值等）</td>
+      <td>id, value (JSON), updated_at</td>
+    </tr>
+    <tr>
+      <td><span class="code">screener_candidates</span></td>
+      <td>人才库</td>
+      <td>id, name, email, data (JSON), created_at, updated_at</td>
+    </tr>
+  </table>
+
+  <h3>3.2 API 路由（backend/screenerRoutes.js）</h3>
+  <p>所有路由挂载在 <span class="code">/api/screener</span> 前缀下：</p>
+
+  <div style="margin-top:.5rem">
+    <div class="api-route"><span class="method method-get">GET</span><span class="api-path">/help-config</span><span class="api-desc">获取帮助信息</span></div>
+    <div class="api-route"><span class="method method-put">PUT</span><span class="api-path">/help-config</span><span class="api-desc">更新帮助信息</span></div>
+
+    <div class="api-route"><span class="method method-get">GET</span><span class="api-path">/snapshots</span><span class="api-desc">获取所有快照</span></div>
+    <div class="api-route"><span class="method method-post">POST</span><span class="api-path">/snapshots</span><span class="api-desc">创建快照</span></div>
+    <div class="api-route"><span class="method method-delete">DELETE</span><span class="api-path">/snapshots/:id</span><span class="api-desc">删除快照</span></div>
+
+    <div class="api-route"><span class="method method-get">GET</span><span class="api-path">/settings/:id</span><span class="api-desc">获取单项配置</span></div>
+    <div class="api-route"><span class="method method-put">PUT</span><span class="api-path">/settings/:id</span><span class="api-desc">保存/更新配置</span></div>
+    <div class="api-route"><span class="method method-post">POST</span><span class="api-path">/settings/batch</span><span class="api-desc">批量获取配置</span></div>
+
+    <div class="api-route"><span class="method method-get">GET</span><span class="api-path">/candidates</span><span class="api-desc">获取所有候选人</span></div>
+    <div class="api-route"><span class="method method-post">POST</span><span class="api-path">/candidates</span><span class="api-desc">新增候选人</span></div>
+    <div class="api-route"><span class="method method-put">PUT</span><span class="api-path">/candidates/:id</span><span class="api-desc">更新候选人</span></div>
+    <div class="api-route"><span class="method method-delete">DELETE</span><span class="api-path">/candidates/:id</span><span class="api-desc">删除候选人</span></div>
+    <div class="api-route"><span class="method method-post">POST</span><span class="api-path">/candidates/bulk</span><span class="api-desc">批量导入候选人</span></div>
+  </div>
+</section>
+
+<!-- ==================== 4. Data Sync ==================== -->
+<section>
+  <h2><span class="icon">&#128260;</span> 四、数据同步全景（12 项全部后端持久化）</h2>
+  <p>所有 localStorage 配置均实现双写：本地即时生效 + 异步同步后端。应用启动时从后端拉取并与本地合并。</p>
+
+  <table>
+    <tr><th>#</th><th>localStorage Key</th><th>后端存储</th><th>同步方式</th></tr>
+    <tr>
+      <td>1</td>
+      <td><span class="code">tsinghua_api_config</span></td>
+      <td>settings/api_config</td>
+      <td><span class="badge badge-green">settingsService</span></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><span class="code">tsinghua_questions</span></td>
+      <td>settings/questions</td>
+      <td><span class="badge badge-green">settingsService</span></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><span class="code">tsinghua_dimension_weights</span></td>
+      <td>settings/dimension_weights</td>
+      <td><span class="badge badge-green">settingsService</span></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><span class="code">tsinghua_decision_thresholds</span></td>
+      <td>settings/decision_thresholds</td>
+      <td><span class="badge badge-green">settingsService</span></td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><span class="code">tsinghua_prompt_config</span></td>
+      <td>settings/prompt_config</td>
+      <td><span class="badge badge-green">settingsService</span></td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td><span class="code">tsinghua_decision_tree</span></td>
+      <td>settings/decision_tree</td>
+      <td><span class="badge badge-green">settingsService</span></td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td><span class="code">tsinghua_probing_strategy</span></td>
+      <td>settings/probing_strategy</td>
+      <td><span class="badge badge-green">settingsService</span></td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td><span class="code">tsinghua_workflow_modules</span></td>
+      <td>settings/workflow_modules</td>
+      <td><span class="badge badge-green">settingsService</span></td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td><span class="code">tsinghua_candidates</span></td>
+      <td>screener_candidates 表</td>
+      <td><span class="badge badge-blue">candidateService</span></td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td><span class="code">tsinghua_snapshots</span></td>
+      <td>screener_snapshots 表</td>
+      <td><span class="badge badge-blue">backupService</span></td>
+    </tr>
+    <tr>
+      <td>11</td>
+      <td><span class="code">tsinghua_feedback</span></td>
+      <td>settings/feedback</td>
+      <td><span class="badge badge-green">settingsService</span></td>
+    </tr>
+    <tr>
+      <td>12</td>
+      <td><span class="code">tsinghua_prompt_versions</span></td>
+      <td>settings/prompt_versions</td>
+      <td><span class="badge badge-green">settingsService</span></td>
+    </tr>
+  </table>
+</section>
+
+<!-- ==================== 5. Frontend Integration ==================== -->
+<section>
+  <h2><span class="icon">&#127912;</span> 五、前端整合要点</h2>
+
+  <h3>5.1 导航入口（App.tsx）</h3>
+  <ul>
+    <li><span class="code">AppView</span> 枚举新增 <span class="code">Screener = 'SCREENER'</span></li>
+    <li>导航栏右侧分隔线前新增「招生」按钮（图标：<span class="code">ClipboardCheck</span>）</li>
+    <li>视图渲染区新增 <span class="code">{view === AppView.Screener && &lt;ScreenerApp /&gt;}</span></li>
+  </ul>
+
+  <h3>5.2 滚动修复</h3>
+  <p><span class="code">&lt;main&gt;</span> 容器的 overflow 改为条件式：招生视图用 <span class="code">overflow-y-auto</span>（允许滚动），其他视图保持 <span class="code">overflow-hidden</span>。</p>
+
+  <h3>5.3 Tailwind 扩展（index.html）</h3>
+  <ul>
+    <li>新增 <span class="code">tsinghua</span> 颜色系列（50 ~ 900）</li>
+    <li>新增动画：fade-in, scale-in, slide-up, flow-pulse, node-glow</li>
+    <li>新增 Google Fonts：Inter, Noto Sans SC</li>
+  </ul>
+
+  <h3>5.4 认证方式</h3>
+  <table>
+    <tr><th>字段</th><th>值</th></tr>
+    <tr><td>管理员账号</td><td><span class="code">admin@mails.tsinghua.edu.cn</span></td></tr>
+    <tr><td>管理员密码</td><td><span class="code">BIDBIDBID88</span></td></tr>
+    <tr><td>认证方式</td><td>本地硬编码（authService.ts），无 Supabase</td></tr>
+  </table>
+</section>
+
+<!-- ==================== 6. Deployment ==================== -->
+<section>
+  <h2><span class="icon">&#128640;</span> 六、部署流程（QUICK_DEPLOY.sh）</h2>
+
+  <div class="flow-diagram">
+    <div class="flow-step">&#128273; 配置 SSH 密钥</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-step">&#128268; 测试服务器连接</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-step">&#128228; rsync 上传代码</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-step">&#128295; 远程 deploy.sh</div>
+    <span class="flow-arrow">&rarr;</span>
+    <div class="flow-step">&#127881; 上线完成</div>
+  </div>
+
+  <table>
+    <tr><th>步骤</th><th>命令/行为</th><th>说明</th></tr>
+    <tr>
+      <td>1. 密钥配置</td>
+      <td><span class="code">cp server_ssh_key ~/.ssh/business_server</span></td>
+      <td>将项目目录下的私钥复制到 SSH 标准位置</td>
+    </tr>
+    <tr>
+      <td>2. 连接测试</td>
+      <td><span class="code">ssh root@8.145.43.200</span></td>
+      <td>验证网络和密钥可达性</td>
+    </tr>
+    <tr>
+      <td>3. 代码上传</td>
+      <td><span class="code">rsync -avz</span></td>
+      <td>增量同步，排除 node_modules / .git / data.db / 密钥</td>
+    </tr>
+    <tr>
+      <td>4. 远程部署</td>
+      <td><span class="code">deploy.sh</span></td>
+      <td>在服务器 ~/workspace/business 执行构建 + PM2 重启</td>
+    </tr>
+  </table>
+
+  <div style="margin-top:.75rem">
+    <p><strong>服务器信息：</strong></p>
+    <ul>
+      <li>IP：<span class="code">8.145.43.200</span></li>
+      <li>用户：<span class="code">root</span></li>
+      <li>部署目录：<span class="code">~/workspace/business</span></li>
+      <li>访问地址：<span class="code">http://aiforbazi.cloud</span></li>
+      <li>日志查看：<span class="code">pm2 logs bizmodel-backend</span></li>
+    </ul>
+  </div>
+
+  <h3>rsync 排除列表（不会上传的文件）</h3>
+  <ul>
+    <li><span class="code">node_modules/</span> &mdash; 服务器端 npm install 重新安装</li>
+    <li><span class="code">dist/</span> &mdash; 服务器端重新 build</li>
+    <li><span class="code">.git/</span> &mdash; 版本控制目录</li>
+    <li><span class="code">backend/data.db</span> &mdash; 生产数据库不覆盖</li>
+    <li><span class="code">server_ssh_key*</span> &mdash; 部署密钥不上传</li>
+  </ul>
+</section>
+
+<!-- ==================== 7. Checklist ==================== -->
+<section>
+  <h2><span class="icon">&#9745;</span> 七、部署前检查清单</h2>
+  <table>
+    <tr><th style="width:40px">&#10004;</th><th>检查项</th><th>状态 / 说明</th></tr>
+    <tr>
+      <td style="text-align:center; color:var(--green); font-size:1.1rem">&#10004;</td>
+      <td>screener/ 子目录全部文件就位</td>
+      <td><span class="badge badge-green">已完成</span> 20 组件 + 14 服务 + 2 数据文件</td>
+    </tr>
+    <tr>
+      <td style="text-align:center; color:var(--green); font-size:1.1rem">&#10004;</td>
+      <td>后端 screenerRoutes.js 创建并挂载</td>
+      <td><span class="badge badge-green">已完成</span></td>
+    </tr>
+    <tr>
+      <td style="text-align:center; color:var(--green); font-size:1.1rem">&#10004;</td>
+      <td>Supabase 依赖完全移除</td>
+      <td><span class="badge badge-green">已完成</span> package.json + importmap</td>
+    </tr>
+    <tr>
+      <td style="text-align:center; color:var(--green); font-size:1.1rem">&#10004;</td>
+      <td>12 项数据全部后端同步</td>
+      <td><span class="badge badge-green">已完成</span></td>
+    </tr>
+    <tr>
+      <td style="text-align:center; color:var(--green); font-size:1.1rem">&#10004;</td>
+      <td>TypeScript 编译无新增错误</td>
+      <td><span class="badge badge-green">已完成</span></td>
+    </tr>
+    <tr>
+      <td style="text-align:center; color:var(--green); font-size:1.1rem">&#10004;</td>
+      <td>导航栏「招生」入口可点击跳转</td>
+      <td><span class="badge badge-green">已验证</span></td>
+    </tr>
+    <tr>
+      <td style="text-align:center; color:var(--green); font-size:1.1rem">&#10004;</td>
+      <td>管理员登录功能正常</td>
+      <td><span class="badge badge-green">已验证</span></td>
+    </tr>
+    <tr>
+      <td style="text-align:center; color:var(--green); font-size:1.1rem">&#10004;</td>
+      <td>页面滚动正常</td>
+      <td><span class="badge badge-green">已修复</span></td>
+    </tr>
+  </table>
+</section>
+
+<!-- ==================== 8. Notes ==================== -->
+<section>
+  <h2><span class="icon">&#9888;</span> 八、注意事项</h2>
+
+  <div class="callout callout-warn">
+    <span class="emoji">&#9888;&#65039;</span>
+    <div>
+      <strong>.env.local 的 VITE_BACKEND_URL</strong><br>
+      当前设为 <span class="code">http://localhost:3001</span>。如果生产环境前后端同机部署，无需修改；如果分离部署，需改为实际后端地址。
+    </div>
+  </div>
+
+  <div class="callout callout-warn">
+    <span class="emoji">&#128274;</span>
+    <div>
+      <strong>管理员密码为硬编码</strong><br>
+      <span class="code">authService.ts</span> 中管理员账密直接写在代码里。如需更改，需修改源码并重新部署。建议后续迁移至数据库或环境变量。
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <span class="emoji">&#128451;</span>
+    <div>
+      <strong>生产数据库不会被覆盖</strong><br>
+      <span class="code">upload-to-server.sh</span> 排除了 <span class="code">backend/data.db</span>，所以每次部署不会覆盖生产数据。首次部署时数据库会自动创建空表。
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <span class="emoji">&#128268;</span>
+    <div>
+      <strong>部署前提</strong><br>
+      运行 <span class="code">QUICK_DEPLOY.sh</span> 前需要确认：(1) 项目根目录存在 <span class="code">server_ssh_key</span> 文件；(2) 本机已安装 rsync 和 ssh 客户端。
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 9. Removed Dependencies ==================== -->
+<section>
+  <h2><span class="icon">&#128465;</span> 九、已移除的依赖</h2>
+  <table>
+    <tr><th>依赖</th><th>原用途</th><th>替代方案</th></tr>
+    <tr>
+      <td><span class="code">@supabase/supabase-js</span></td>
+      <td>Supabase 数据库 + 认证客户端</td>
+      <td>apiFetch() &rarr; Express API + 本地认证</td>
+    </tr>
+  </table>
+
+  <p style="margin-top:.75rem">同时从 <span class="code">index.html</span> 的 importmap 中移除了对应的 CDN 引用，从 <span class="code">.env.local</span> 中移除了 <span class="code">VITE_SUPABASE_URL</span> 和 <span class="code">VITE_SUPABASE_ANON_KEY</span>。</p>
+</section>
+
+<footer>
+  商业模式工坊 &middot; 招生筛选系统迁移报告 &middot; 生成于 2026-03-05
+</footer>
+
+</div>
+</body>
+</html>

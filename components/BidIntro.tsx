@@ -163,6 +163,22 @@ const BidIntro: React.FC<Props> = ({ lang, onContinue }) => {
                 </ul>
               </section>
 
+              {/* Section 7: Application Note */}
+              <section>
+                <h2 className="text-lg font-black text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center text-sm font-black">07</span>
+                  申请须知
+                </h2>
+                <div className="space-y-3 text-sm text-gray-600 leading-relaxed">
+                  <p>为了选拔真正适合 BID 的同学，我们设置了一套<strong className="text-gray-900">筛选流程</strong>，需要你认真填写个人信息并完成在线评估。这些信息将帮助我们更好地了解你、为你匹配合适的学习路径。</p>
+                  <div className="bg-amber-50/50 border border-amber-100 rounded-2xl p-4 space-y-2">
+                    <p className="text-amber-800 font-bold text-sm">BID 是清华社团中最早使用 AI 技术辅助招生筛选的项目。</p>
+                    <p className="text-amber-700 text-xs">本系统近期刚刚上线，仍在持续迭代优化中。如果在使用过程中遇到任何问题，欢迎点击页面<strong>左下角的「需要帮助」按钮</strong>向我们反馈。</p>
+                    <p className="text-amber-900 font-bold text-xs">主动反馈问题的同学，将优先获得面试机会。</p>
+                  </div>
+                </div>
+              </section>
+
               <div className="text-center pt-2 pb-1">
                 <p className="text-xs text-gray-400 italic">"当获取信息的边际成本趋近于零，真正稀缺的是你看到了什么别人看不到的东西。"</p>
               </div>
@@ -251,6 +267,21 @@ const BidIntro: React.FC<Props> = ({ lang, onContinue }) => {
                       <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
                     </div>
                   ))}
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-lg font-black text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center text-sm font-black">07</span>
+                  Application Note
+                </h2>
+                <div className="space-y-3 text-sm text-gray-600 leading-relaxed">
+                  <p>To select the right candidates for BID, we have a <strong className="text-gray-900">screening process</strong> that requires you to fill in your information and complete an online assessment.</p>
+                  <div className="bg-amber-50/50 border border-amber-100 rounded-2xl p-4 space-y-2">
+                    <p className="text-amber-800 font-bold text-sm">BID is the first Tsinghua club to use AI-assisted screening.</p>
+                    <p className="text-amber-700 text-xs">This system was recently launched and is being continuously improved. If you encounter any issues, please click the <strong>"Need Help" button</strong> in the bottom-left corner to share feedback.</p>
+                    <p className="text-amber-900 font-bold text-xs">Students who report issues will receive priority for interviews.</p>
+                  </div>
                 </div>
               </section>
 

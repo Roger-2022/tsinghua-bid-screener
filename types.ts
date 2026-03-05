@@ -47,6 +47,8 @@ export interface CandidateBasicInfo {
   hasReadRecruitPost: '' | 'yes' | 'familiar_no_need';
   careerPlan: string;
   referralSource: string;
+  resumeUrl?: string;        // 简历文件 URL（Supabase Storage 或 Express 上传）
+  resumeFileName?: string;   // 简历原始文件名
 }
 
 export interface HelpWidgetConfig {
@@ -492,6 +494,7 @@ export interface CandidateProfile {
   phone: string | null;
   email?: string | null;
   past_projects: string;
+  resume_url: string | null;
   homework_willingness: boolean;
   leader_willingness: boolean;
   self_description: string;
@@ -608,6 +611,7 @@ export const EXPORT_COLUMNS = [
   { key: 'leader',            zh: '组长意愿',           en: 'Leader Willingness' },
   { key: 'self_description',  zh: '三词自述',           en: 'Self Description' },
   { key: 'past_projects',     zh: '过往项目经历',        en: 'Past Projects' },
+  { key: 'resume_url',        zh: '简历下载',            en: 'Resume Download' },
   { key: 'has_read_recruit_post', zh: '是否阅读招生推送', en: 'Read Recruit Post' },
   { key: 'career_plan',       zh: '职业规划',            en: 'Career Plan' },
   { key: 'referral_source',   zh: '从何得知',            en: 'Referral Source' },
@@ -636,7 +640,7 @@ export const EXPORT_COLUMNS = [
 
 // ========== Export Column Groups (逻辑分组) ==========
 export const EXPORT_COLUMN_GROUPS = [
-  { id: 'basic', zh: '基本信息', en: 'Basic Information', keys: ['candidate_id', 'name', 'gender', 'identity', 'school', 'department', 'major_title', 'grade_level', 'self_description', 'past_projects', 'has_read_recruit_post', 'career_plan', 'referral_source'] },
+  { id: 'basic', zh: '基本信息', en: 'Basic Information', keys: ['candidate_id', 'name', 'gender', 'identity', 'school', 'department', 'major_title', 'grade_level', 'self_description', 'past_projects', 'resume_url', 'has_read_recruit_post', 'career_plan', 'referral_source'] },
   { id: 'contact', zh: '联系方式', en: 'Contact Information', keys: ['wechat_id', 'phone', 'email'] },
   { id: 'availability', zh: '参与意愿', en: 'Availability & Willingness', keys: ['weekly_h1', 'weekly_h2', 'offline_interview', 'homework', 'leader'] },
   { id: 'scores', zh: '评分维度', en: 'Score Dimensions', keys: ['s_motivation', 's_logic', 's_resilience', 's_innovation', 's_commitment', 's_thinking_depth', 's_multidim_thinking', 's_overall'] },

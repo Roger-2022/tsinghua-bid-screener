@@ -244,17 +244,25 @@ const ResultView: React.FC<Props> = ({ record, isAdmin = false, lang, isEditing 
     setStep('done');
   };
 
-  const infoFields: { label: string; value: string }[] = candidateInfo ? [
-    { label: isCN ? '姓名' : 'Name', value: (editData || candidateInfo).name },
-    { label: isCN ? '性别' : 'Gender', value: (editData || candidateInfo).gender === 'male' ? (isCN ? '男' : 'Male') : (isCN ? '女' : 'Female') },
-    { label: isCN ? '微信号' : 'WeChat', value: (editData || candidateInfo).wechat },
-    { label: isCN ? '学校' : 'School', value: (editData || candidateInfo).school },
-    { label: isCN ? '院系' : 'Department', value: (editData || candidateInfo).department },
-    { label: isCN ? '专业' : 'Major', value: (editData || candidateInfo).major },
-    { label: isCN ? '年级' : 'Grade', value: ((t as any).gradeOptions as any)?.[(editData || candidateInfo).gradeOrLevel] || (editData || candidateInfo).gradeOrLevel },
-    { label: isCN ? '电话' : 'Phone', value: (editData || candidateInfo).phone },
-    { label: isCN ? '邮箱' : 'Email', value: (editData || candidateInfo).email },
-    { label: isCN ? '三词自述' : 'Self Description', value: (editData || candidateInfo).selfDescription },
+  const d = editData || candidateInfo;
+  const infoFields: { label: string; value: string; wide?: boolean }[] = d ? [
+    { label: isCN ? '姓名' : 'Name', value: d.name },
+    { label: isCN ? '性别' : 'Gender', value: d.gender === 'male' ? (isCN ? '男' : 'Male') : (isCN ? '女' : 'Female') },
+    { label: isCN ? '微信号' : 'WeChat', value: d.wechat },
+    { label: isCN ? '学校' : 'School', value: d.school },
+    { label: isCN ? '院系' : 'Department', value: d.department },
+    { label: isCN ? '专业' : 'Major', value: d.major },
+    { label: isCN ? '年级' : 'Grade', value: ((t as any).gradeOptions as any)?.[d.gradeOrLevel] || d.gradeOrLevel },
+    { label: isCN ? '电话' : 'Phone', value: d.phone },
+    { label: isCN ? '邮箱' : 'Email', value: d.email },
+    { label: isCN ? '三词自述' : 'Self Description', value: d.selfDescription },
+    { label: isCN ? '是否阅读招生推送' : 'Read Recruit Post', value: d.hasReadRecruitPost === 'yes' ? (isCN ? '是' : 'Yes') : (isCN ? '已了解，无需看推送' : 'Familiar, no need') },
+    { label: isCN ? '职业规划' : 'Career Plan', value: d.careerPlan, wide: true },
+    { label: isCN ? '从何得知' : 'Referral', value: ((t as any).referralOptions as any)?.[d.referralSource] || d.referralSource },
+    { label: isCN ? '前8周投入(h/周)' : 'Hours/wk (Wk1-8)', value: String(d.timeCommitmentWeeks1to8 || '-') },
+    { label: isCN ? '后8周投入(h/周)' : 'Hours/wk (Wk9-16)', value: String(d.timeCommitmentWeeks9to16 || '-') },
+    { label: isCN ? '过往经历亮点' : 'Past Experience', value: d.projects, wide: true },
+    ...(d.resumeFileName ? [{ label: isCN ? '简历' : 'Resume', value: d.resumeFileName }] : []),
   ] : [];
 
   // Step 2 — Assessment Complete
@@ -309,9 +317,9 @@ const ResultView: React.FC<Props> = ({ record, isAdmin = false, lang, isEditing 
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {infoFields.map((field, idx) => (
-                    <div key={idx} className="py-2">
+                    <div key={idx} className={`py-2 ${field.wide ? 'md:col-span-2' : ''}`}>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">{field.label}</p>
-                      <p className="text-sm font-medium text-gray-800">{field.value || '-'}</p>
+                      <p className="text-sm font-medium text-gray-800 whitespace-pre-wrap">{field.value || '-'}</p>
                     </div>
                   ))}
                 </div>
@@ -325,7 +333,7 @@ const ResultView: React.FC<Props> = ({ record, isAdmin = false, lang, isEditing 
                 </div>
               </>
             ) : (
-              /* Edit Mode: inline editable fields */
+              /* Edit Mode */
               <div className="space-y-4">
                 {editData && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -382,11 +390,92 @@ const ResultView: React.FC<Props> = ({ record, isAdmin = false, lang, isEditing 
           </div>
         </div>
 
+        {/* Course Activity Description + Checkboxes */}
+        {!editMode && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="h-1.5 w-full bg-gradient-to-r from-amber-400 to-tsinghua-500"></div>
+            <div className="p-8 space-y-6">
+              <div>
+                <h3 className="text-sm font-black text-gray-900 mb-3">
+                  {isCN ? '课后活动介绍' : 'After-Class Activities'}
+                </h3>
+                <div className="text-sm text-gray-600 leading-relaxed space-y-2 bg-gray-50 p-5 rounded-xl border border-gray-100">
+                  <p>{isCN
+                    ? '入选后，你将以小组形式参与课后研讨，合作完成一个与 AI 与商业模式相关的课题。整个过程中：'
+                    : 'After selection, you will participate in group research on AI and business models:'}</p>
+                  <ul className="space-y-1.5 ml-4">
+                    <li className="flex items-start gap-2">
+                      <span className="text-tsinghua-600 mt-0.5 flex-shrink-0">•</span>
+                      <span>{isCN ? '政委辅导员将全程指导各小组的课题研讨与产出' : 'Political commissar mentors will guide each group throughout'}</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-tsinghua-600 mt-0.5 flex-shrink-0">•</span>
+                      <span>{isCN ? '期间会有 2-3 次汇报（中期、结课等），展示课题进展' : '2-3 presentations (midterm, final) to showcase project progress'}</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-600 mt-0.5 flex-shrink-0">★</span>
+                      <span className="font-bold text-gray-800">{isCN
+                        ? '担任小组长，你将获得更多与商业大佬交流的机会，锻炼领导和组织能力，并有机会获得荣誉证书和奖项'
+                        : 'As group leader, you gain more networking with business leaders, develop leadership skills, and earn certificates & awards'}</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Three checkboxes */}
+              <div className="space-y-4">
+                <label className="flex items-center gap-4 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    name="offlineInterview"
+                    checked={(editData || candidateInfo)?.offlineInterview || false}
+                    onChange={handleEditField}
+                    className="w-6 h-6 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
+                  />
+                  <span className="text-sm font-bold text-gray-700 group-hover:text-tsinghua-600 transition">
+                    {t.offlineInterview}
+                  </span>
+                </label>
+                <label className="flex items-center gap-4 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    name="homeworkWillingness"
+                    checked={(editData || candidateInfo)?.homeworkWillingness || false}
+                    onChange={handleEditField}
+                    className="w-6 h-6 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
+                  />
+                  <span className="text-sm font-bold text-gray-700 group-hover:text-tsinghua-600 transition">
+                    {t.willingness}
+                  </span>
+                </label>
+                <label className="flex items-center gap-4 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    name="leaderWillingness"
+                    checked={(editData || candidateInfo)?.leaderWillingness || false}
+                    onChange={handleEditField}
+                    className="w-6 h-6 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
+                  />
+                  <span className="text-sm font-bold text-gray-700 group-hover:text-tsinghua-600 transition">
+                    {t.leader}
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Confirm Button */}
         {!editMode && (
           <div className="text-center">
             <button
-              onClick={handleConfirmSubmit}
+              onClick={() => {
+                // Save checkbox state before confirming
+                if (editData && onUpdateCandidateInfo) {
+                  onUpdateCandidateInfo(editData);
+                }
+                handleConfirmSubmit();
+              }}
               className="px-16 py-4 bg-gray-900 text-white font-black rounded-full hover:bg-black transition-all shadow-2xl active:scale-[0.98] tracking-widest uppercase text-sm"
             >
               {(t as any).resultConfirmSubmit}

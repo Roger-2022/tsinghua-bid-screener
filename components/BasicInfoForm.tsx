@@ -1,13 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { CandidateBasicInfo, Language } from '../types';
 import { translations } from '../i18n';
+import { uploadResume } from '../services/resumeService';
 
 interface Props {
   onSubmit: (info: CandidateBasicInfo) => void;
   lang: Language;
   initialData?: CandidateBasicInfo;
-  recruitPostUrl?: string;
 }
 
 const GRADE_KEYS = [
@@ -30,7 +30,7 @@ const gradeToIdentity = (grade: string): CandidateBasicInfo['identity'] => {
   return 'Undergraduate';
 };
 
-const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData, recruitPostUrl }) => {
+const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData }) => {
   const t = translations[lang];
 
   const [formData, setFormData] = useState<CandidateBasicInfo>(initialData || {
@@ -57,6 +57,26 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData, recruitPo
   });
 
   const [validationError, setValidationError] = useState(false);
+  const [resumeUploading, setResumeUploading] = useState(false);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const resumeInputRef = useRef<HTMLInputElement>(null);
+
+  const handleResumeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!validTypes.includes(file.type)) {
+      alert(lang === 'CN' ? '请上传 PDF 或 Word 文件' : 'Please upload a PDF or Word file');
+      return;
+    }
+    setResumeFile(file);
+    setResumeUploading(true);
+    const result = await uploadResume(file, formData.name || 'unnamed');
+    setResumeUploading(false);
+    if (result) {
+      setFormData(prev => ({ ...prev, resumeUrl: result.url, resumeFileName: result.fileName }));
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target as any;
@@ -260,26 +280,10 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData, recruitPo
 
           {/* Has Read Recruit Post */}
           <div className="bg-blue-50/50 p-6 rounded-3xl border border-blue-100">
-            <div className="flex items-center justify-between mb-3">
+            <div className="mb-3">
               <label className="text-xs font-black text-blue-600 uppercase tracking-widest">
                 {(t as any).hasReadRecruitPost} <span className="text-red-400">*</span>
               </label>
-              {recruitPostUrl ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const msg = lang === 'CN'
-                      ? `请复制以下链接到浏览器打开：\n\n${recruitPostUrl}`
-                      : `Please copy the link below and open in your browser:\n\n${recruitPostUrl}`;
-                    window.prompt(msg, recruitPostUrl);
-                  }}
-                  className="text-xs font-bold text-tsinghua-600 hover:text-tsinghua-800 underline"
-                >
-                  {(t as any).hasReadRecruitPostLink}
-                </button>
-              ) : (
-                <span className="text-xs text-gray-400">{(t as any).hasReadRecruitPostLink}</span>
-              )}
             </div>
             <select
               name="hasReadRecruitPost"
@@ -381,68 +385,54 @@ const BasicInfoForm: React.FC<Props> = ({ onSubmit, lang, initialData, recruitPo
 
           {/* Projects */}
           <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">
-                {t.projects} ({t.projectsLimit}) <span className="text-red-400">*</span>
+            <div className="mb-2">
+              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1">
+                {(t as any).projectsLabel || '过往经历亮点'} <span className="text-red-400">*</span>
               </label>
-              <span
-                className={`text-[10px] font-bold ${
-                  formData.projects.length > 150 ? 'text-red-500' : 'text-gray-300'
-                }`}
-              >
-                {formData.projects.length} / 150
-              </span>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                {(t as any).projectsPrompt || '请分享你最自豪的经历、有亮点的项目、你认为自己有特点的地方——为什么你觉得这个事情有亮点？你做了什么差异化的改变？（不限字数）'}
+              </p>
             </div>
             <textarea
               name="projects"
               value={formData.projects}
               onChange={handleChange}
-              rows={4}
-              maxLength={150}
-              placeholder={(t as any).projectsPlaceholder}
+              rows={5}
+              placeholder={(t as any).projectsPlaceholderNew || '例如：我在某次比赛中主导了方案设计，通过重新定义用户需求实现了差异化...'}
               className="w-full px-5 py-4 border border-gray-100 rounded-3xl resize-none focus:ring-4 focus:ring-tsinghua-100 outline-none bg-gray-50/50 font-medium"
               required
             />
           </div>
 
-          {/* Checkboxes */}
-          <div className="flex flex-col gap-4 py-4 px-2">
-            <label className="flex items-center gap-4 cursor-pointer group">
-              <input
-                type="checkbox"
-                name="offlineInterview"
-                checked={formData.offlineInterview}
-                onChange={handleChange}
-                className="w-6 h-6 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
-              />
-              <span className="text-sm font-bold text-gray-700 group-hover:text-tsinghua-600 transition">
-                {t.offlineInterview} <span className="text-red-400">*</span>
-              </span>
+
+          {/* Resume Upload */}
+          <div className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
+            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">
+              {lang === 'CN' ? '上传简历（可选）' : 'Upload Resume (Optional)'}
             </label>
-            <label className="flex items-center gap-4 cursor-pointer group">
-              <input
-                type="checkbox"
-                name="homeworkWillingness"
-                checked={formData.homeworkWillingness}
-                onChange={handleChange}
-                className="w-6 h-6 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
-              />
-              <span className="text-sm font-bold text-gray-700 group-hover:text-tsinghua-600 transition">
-                {t.willingness} <span className="text-red-400">*</span>
-              </span>
-            </label>
-            <label className="flex items-center gap-4 cursor-pointer group">
-              <input
-                type="checkbox"
-                name="leaderWillingness"
-                checked={formData.leaderWillingness}
-                onChange={handleChange}
-                className="w-6 h-6 rounded-lg border-gray-300 text-tsinghua-600 focus:ring-tsinghua-500"
-              />
-              <span className="text-sm font-bold text-gray-700 group-hover:text-tsinghua-600 transition">
-                {t.leader} <span className="text-red-400">*</span>
-              </span>
-            </label>
+            <p className="text-xs text-gray-500 mb-3">
+              {lang === 'CN' ? '支持 PDF 或 Word 文件，方便我们更全面地了解你' : 'PDF or Word files accepted'}
+            </p>
+            <input
+              ref={resumeInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={handleResumeChange}
+              className="hidden"
+            />
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => resumeInputRef.current?.click()}
+                disabled={resumeUploading}
+                className="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:border-tsinghua-300 hover:text-tsinghua-600 transition disabled:opacity-50"
+              >
+                {resumeUploading ? (lang === 'CN' ? '上传中...' : 'Uploading...') : (lang === 'CN' ? '选择文件' : 'Choose File')}
+              </button>
+              {formData.resumeFileName && (
+                <span className="text-sm text-tsinghua-600 font-medium">{formData.resumeFileName}</span>
+              )}
+            </div>
           </div>
 
           {/* Submit */}
